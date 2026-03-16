@@ -5,6 +5,7 @@ import { PinLogin } from './components/PinLogin'
 import { Board } from './pages/Board'
 import { Admin } from './pages/Admin'
 import { Analytics } from './pages/Analytics'
+import { DataAnalytics } from './pages/DataAnalytics'
 
 function AppInner() {
   const { user, loading, error, login, logout } = useAuth()
@@ -31,6 +32,10 @@ function AppInner() {
       <Route
         path="/analytics"
         element={user.role === 'admin' ? <Analytics user={user} /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/data-analytics"
+        element={user.role === 'admin' ? <DataAnalytics user={user} /> : <Navigate to="/" replace />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

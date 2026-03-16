@@ -92,6 +92,25 @@ export function Board({ user, onLogout }: Props) {
           </button>
         )}
 
+        {/* Data Analytics dashboard (admin only) */}
+        {user.role === 'admin' && (
+          <button
+            onClick={() => navigate('/data-analytics')}
+            className="w-full flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100
+                       rounded-2xl px-4 py-3 hover:from-indigo-100 hover:to-purple-100 active:from-indigo-200 active:to-purple-200 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">Дашборд аналітики</span>
+            </div>
+            <span className="text-purple-400">›</span>
+          </button>
+        )}
+
         {/* Error */}
         {error && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
