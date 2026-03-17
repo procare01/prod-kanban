@@ -683,20 +683,50 @@ export function DataAnalytics({ user }: Props) {
                   return `${h}:00`
                 })
 
-                // Generate realistic process values based on status
-                const baseValue = line.status?.is_terminal ? 95 :
-                  statusName === 'Зупинка' ? 15 :
-                  statusName === 'Фасування' ? 72 :
-                  statusName === 'Початок' ? 40 : 50
+                // Map status to a fixed level value
+                const statusLevel = (name: string | undefined) => {
+                  switch (name) {
+                    case 'Завершено': return 100
+                    case 'Фасування': return 70
+                    case 'Початок': return 40
+                    case 'Зупинка': return 10
+                    default: return 0
+                  }
+                }
 
-                // Create smooth curve data with some variation
-                const seed = line.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+                // Find today's status-change events for this line
+                const todayStr = new Date().toDateString()
+                const lineChanges = events
+                  .filter(e =>
+                    e.line_name === line.name &&
+                    new Date(e.created_at).toDateString() === todayStr
+                  )
+                  .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+
+                // Build hourly values: flat at current status if no changes,
+                // otherwise step through status changes
+                const currentLevel = statusLevel(statusName)
                 const values = hours.map((_, i) => {
-                  const noise = Math.sin(seed + i * 1.7) * 15 + Math.cos(seed * 0.3 + i * 2.3) * 8
-                  return Math.max(5, Math.min(100, baseValue + noise + (i * (line.status?.is_terminal ? 3 : -0.5))))
+                  if (lineChanges.length === 0) return currentLevel
+                  const hourTime = new Date()
+                  hourTime.setHours(7 + i, 0, 0, 0)
+                  const ht = hourTime.getTime()
+                  // Find the last change before this hour
+                  let level = currentLevel
+                  for (const ev of lineChanges) {
+                    if (new Date(ev.created_at).getTime() <= ht) {
+                      // Try to detect the new status from description
+                      const desc = ev.description ?? ''
+                      if (desc.includes('Завершено')) level = 100
+                      else if (desc.includes('Фасування')) level = 70
+                      else if (desc.includes('Початок')) level = 40
+                      else if (desc.includes('Зупинка')) level = 10
+                    }
+                  }
+                  return level
                 })
 
-                const currentValue = values[values.length - 1]
+                const currentValue = currentLevel
 
                 return (
                   <div key={line.id} className="bg-gray-50/70 rounded-xl p-3.5 border border-gray-100/80">
