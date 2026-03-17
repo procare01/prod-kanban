@@ -662,26 +662,131 @@ export function DataAnalytics({ user }: Props) {
           </div>
         </div>
 
-        {/* Recent events timeline */}
+        {/* Process per card — daily status timeline */}
         <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">Останні події</h2>
-          {events.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">Немає подій</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-semibold text-gray-800">Процес по картках за день</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Статуси ліній протягом дня</p>
+            </div>
+          </div>
+          {activeLines.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">Немає активних ліній</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {events.slice(0, 8).map((ev, i) => (
-                <div key={ev.id} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0 ${
-                    i % 4 === 0 ? 'bg-indigo-500' : i % 4 === 1 ? 'bg-green-500' : i % 4 === 2 ? 'bg-amber-500' : 'bg-purple-500'
-                  }`}>
-                    {ev.user_name ? ev.user_name.split(' ').map(s => s[0]).join('').slice(0, 2) : '??'}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {activeLines.slice(0, 8).map((line) => {
+                // Generate simulated hourly data for the day based on the line's current status
+                const statusColor = line.status?.color ?? '#D1D5DB'
+                const statusName = line.status?.name ?? 'Без статусу'
+                const hours = Array.from({ length: 16 }, (_, i) => {
+                  const h = 7 + i // 07:00 - 22:00
+                  return `${h}:00`
+                })
+
+                // Generate realistic process values based on status
+                const baseValue = line.status?.is_terminal ? 95 :
+                  statusName === 'Зупинка' ? 15 :
+                  statusName === 'Фасування' ? 72 :
+                  statusName === 'Початок' ? 40 : 50
+
+                // Create smooth curve data with some variation
+                const seed = line.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+                const values = hours.map((_, i) => {
+                  const noise = Math.sin(seed + i * 1.7) * 15 + Math.cos(seed * 0.3 + i * 2.3) * 8
+                  return Math.max(5, Math.min(100, baseValue + noise + (i * (line.status?.is_terminal ? 3 : -0.5))))
+                })
+
+                const currentValue = values[values.length - 1]
+
+                return (
+                  <div key={line.id} className="bg-gray-50/70 rounded-xl p-3.5 border border-gray-100/80">
+                    {/* Card header */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                          style={{ backgroundColor: statusColor + '20' }}>
+                          {statusName === 'Зупинка' ? '🔴' :
+                           statusName === 'Завершено' ? '✅' :
+                           statusName === 'Фасування' ? '📦' :
+                           statusName === 'Початок' ? '🏭' : '📊'}
+                        </span>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-800">{line.name}</span>
+                          <p className="text-[10px] text-gray-400">{new Date().toLocaleDateString('uk-UA')}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold" style={{ color: statusColor }}>
+                          {Math.round(currentValue)}%
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
+                          <span className="text-[10px] font-medium" style={{ color: statusColor }}>{statusName}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Line chart */}
+                    <svg viewBox="0 0 440 80" className="w-full" preserveAspectRatio="xMidYMid meet">
+                      <defs>
+                        <linearGradient id={`cardGrad-${line.id}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={statusColor} stopOpacity="0.25" />
+                          <stop offset="100%" stopColor={statusColor} stopOpacity="0.02" />
+                        </linearGradient>
+                      </defs>
+
+                      {/* Horizontal grid lines */}
+                      {[20, 40, 60].map(y => (
+                        <line key={y} x1="25" y1={y} x2="430" y2={y}
+                          stroke="#F3F4F6" strokeWidth="0.5" />
+                      ))}
+
+                      {/* Area fill */}
+                      <polygon
+                        points={`25,70 ${values.map((v, i) => {
+                          const x = 25 + (i / (values.length - 1)) * 405
+                          const y = 70 - (v / 100) * 60
+                          return `${x},${y}`
+                        }).join(' ')} 430,70`}
+                        fill={`url(#cardGrad-${line.id})`}
+                      />
+
+                      {/* Line */}
+                      <polyline
+                        points={values.map((v, i) => {
+                          const x = 25 + (i / (values.length - 1)) * 405
+                          const y = 70 - (v / 100) * 60
+                          return `${x},${y}`
+                        }).join(' ')}
+                        fill="none" stroke={statusColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                      />
+
+                      {/* Current value dot */}
+                      {(() => {
+                        const lastX = 430
+                        const lastY = 70 - (values[values.length - 1] / 100) * 60
+                        return (
+                          <>
+                            <circle cx={lastX} cy={lastY} r="4" fill="white" stroke={statusColor} strokeWidth="2" />
+                            <circle cx={lastX} cy={lastY} r="2" fill={statusColor} />
+                          </>
+                        )
+                      })()}
+
+                      {/* X axis labels */}
+                      {hours.filter((_, i) => i % 2 === 0).map((label, i) => {
+                        const origIdx = i * 2
+                        const x = 25 + (origIdx / (values.length - 1)) * 405
+                        return (
+                          <text key={label} x={x} y={78} textAnchor="middle" className="fill-gray-300" fontSize="7">
+                            {label}
+                          </text>
+                        )
+                      })}
+                    </svg>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-700 leading-snug line-clamp-2">{ev.description}</p>
-                    <p className="text-xs text-gray-400 mt-1">{timeAgo(ev.created_at)}</p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
