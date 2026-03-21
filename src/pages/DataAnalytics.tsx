@@ -278,10 +278,6 @@ function SubdivisionBars({ stats }: {
             <div className="h-full rounded-full transition-all duration-700"
               style={{ width: `${pct(s.done, s.total)}%`, backgroundColor: s.color }} />
           </div>
-          <div className="h-1 bg-gray-50 rounded-full overflow-hidden mt-1">
-            <div className="h-full rounded-full bg-gray-200 transition-all duration-700"
-              style={{ width: `${pct(s.total, maxTotal) * 100 / 100}%` }} />
-          </div>
         </div>
       ))}
     </div>
@@ -459,7 +455,7 @@ export function DataAnalytics({ user }: Props) {
   const [workStart, setWorkStart] = useState(8)
   const [workEnd, setWorkEnd] = useState(18)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d')
+  const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('7d')
 
   useEffect(() => {
     async function load() {
@@ -645,7 +641,6 @@ export function DataAnalytics({ user }: Props) {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-800">Дашборд</h1>
-                <p className="text-xs text-gray-400">Data Analytics</p>
               </div>
             </div>
           </div>
@@ -726,13 +721,8 @@ export function DataAnalytics({ user }: Props) {
 
           {/* Day of week activity */}
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center mb-4">
               <h2 className="text-base font-semibold text-gray-800">Активність по днях</h2>
-              <button className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
             </div>
             <VerticalBarChart data={eventsByDay.data} activeIndex={eventsByDay.activeIndex} />
           </div>
