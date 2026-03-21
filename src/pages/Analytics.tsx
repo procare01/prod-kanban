@@ -90,20 +90,46 @@ function Donut({ segments, size = 140 }: {
   )
 }
 
-// ── Mini sparkline ───────────────────────────────────────────
+// ── Smooth area sparkline ────────────────────────────────────
 
-function Sparkline({ data, color = '#6366F1' }: { data: number[]; color?: string }) {
-  if (data.length < 2) return null
+function SmoothSparkline({ data, color = '#6366F1' }: { data: number[]; color?: string }) {
+  if (data.length < 2) return (
+    <p className="text-xs text-gray-400 text-center py-4">Немає даних</p>
+  )
+  const W = 300, H = 72, PAD = 6
   const max = Math.max(...data, 1)
-  const w = 160, h = 40
-  const points = data.map((v, i) =>
-    `${(i / (data.length - 1)) * w},${h - (v / max) * (h - 4)}`
-  ).join(' ')
+  const pts: [number, number][] = data.map((v, i) => [
+    PAD + (i / (data.length - 1)) * (W - PAD * 2),
+    H - PAD - (v / max) * (H - PAD * 2),
+  ])
+
+  // smooth bezier path
+  let linePath = `M ${pts[0][0]},${pts[0][1]}`
+  for (let i = 1; i < pts.length; i++) {
+    const px = pts[i - 1], cx = pts[i]
+    const cpx = (px[0] + cx[0]) / 2
+    linePath += ` C ${cpx},${px[1]} ${cpx},${cx[1]} ${cx[0]},${cx[1]}`
+  }
+  // area fill (close to bottom)
+  const areaPath = `${linePath} L ${pts[pts.length - 1][0]},${H} L ${pts[0][0]},${H} Z`
+  const gradId = 'sparkGrad'
+
   return (
-    <svg width={w} height={h} className="overflow-visible">
-      <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {data.map((v, i) => (
-        <circle key={i} cx={(i / (data.length - 1)) * w} cy={h - (v / max) * (h - 4)} r="2.5" fill={color} />
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="overflow-visible" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* area */}
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      {/* line */}
+      <path d={linePath} fill="none" stroke={color} strokeWidth="2.2"
+        strokeLinecap="round" strokeLinejoin="round" />
+      {/* dots only on non-zero values */}
+      {pts.map(([x, y], i) => data[i] > 0 && (
+        <circle key={i} cx={x} cy={y} r="3" fill={color} />
       ))}
     </svg>
   )
@@ -174,18 +200,22 @@ export function Analytics({ user }: Props) {
     })
   }, [board])
 
-  // events per hour (last 12h)
+  // events per hour — working day 07:00 → 22:00
   const eventsPerHour = useMemo(() => {
-    const buckets = Array.from({ length: 12 }, () => 0)
-    const now = Date.now()
+    const DAY_START = 8, DAY_END = 21
+    const buckets = Array.from({ length: DAY_END - DAY_START + 1 }, () => 0)
+    const today = new Date().toDateString()
     for (const ev of events) {
-      const hoursAgo = (now - new Date(ev.created_at).getTime()) / 3600000
-      if (hoursAgo < 12) {
-        buckets[Math.min(11, Math.floor(hoursAgo))]++
-      }
+      const d = new Date(ev.created_at)
+      if (d.toDateString() !== today) continue
+      const h = d.getHours()
+      if (h >= DAY_START && h <= DAY_END) buckets[h - DAY_START]++
     }
-    return buckets.reverse()
+    return buckets
   }, [events])
+
+  const dayStartLabel = '08:00'
+  const dayEndLabel = '21:00'
 
   // top users by events
   const topUsers = useMemo(() => {
@@ -290,14 +320,11 @@ export function Analytics({ user }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Activity sparkline */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Активність (12 год)</h2>
-            <p className="text-xs text-gray-400 mb-3">Кількість подій за годину</p>
-            <div className="flex justify-center">
-              <Sparkline data={eventsPerHour} color="#6366F1" />
-            </div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Активність</h2>
+            <SmoothSparkline data={eventsPerHour} color="#6366F1" />
             <div className="flex justify-between text-[10px] text-gray-400 mt-1 px-1">
-              <span>12г тому</span>
-              <span>зараз</span>
+              <span>{dayStartLabel}</span>
+              <span>{dayEndLabel}</span>
             </div>
           </div>
 
@@ -361,26 +388,6 @@ export function Analytics({ user }: Props) {
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Recent events preview */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Останні події</h2>
-          {events.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">Немає подій</p>
-          ) : (
-            <div className="space-y-2">
-              {events.slice(0, 8).map(ev => (
-                <div key={ev.id} className="flex items-start gap-2 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
-                  <div className="flex-1">
-                    <span className="text-gray-700">{ev.description}</span>
-                    <span className="text-gray-400 text-xs ml-2">{timeAgo(ev.created_at)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
       </div>
