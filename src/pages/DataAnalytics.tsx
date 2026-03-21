@@ -507,6 +507,14 @@ export function DataAnalytics({ user }: Props) {
     activeLines.filter(l => l.status?.name === 'Зупинка').length,
     [activeLines])
 
+  // Today's completions stats (from history)
+  const todayStats = useMemo(() => {
+    const linesRan = new Set(todayHistory.map(h => h.line_id)).size
+    const completions = todayHistory.filter(h => h.new_status_is_terminal).length
+    const rate = linesRan === 0 ? 0 : Math.round((completions / linesRan) * 100)
+    return { linesRan, completions, rate }
+  }, [todayHistory])
+
   const todayEvents = useMemo(() => {
     const now = new Date()
     return events.filter(e => new Date(e.created_at).toDateString() === now.toDateString()).length
@@ -758,12 +766,43 @@ export function DataAnalytics({ user }: Props) {
             </div>
           </div>
 
-          {/* Completion rate gauge */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col items-center justify-center">
-            <div className="flex items-center w-full mb-2">
-              <h2 className="text-base font-semibold text-gray-800">Рівень завершення</h2>
+          {/* Completion rate gauge + today stats */}
+          <div className="flex flex-col gap-3">
+            {/* Gauge */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+              <div className="flex items-center w-full mb-2">
+                <h2 className="text-base font-semibold text-gray-800">Рівень завершення</h2>
+              </div>
+              <GaugeChart value={completionRate} target={80} label="" />
             </div>
-            <GaugeChart value={completionRate} target={80} label="" />
+
+            {/* Today completions */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
+              <h2 className="text-base font-semibold text-gray-800 mb-3">За сьогодні</h2>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-2xl font-bold text-gray-800">{todayStats.linesRan}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">активних ліній</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-emerald-600">{todayStats.completions}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">завершень</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-indigo-600">{todayStats.rate}%</p>
+                  <p className="text-xs text-gray-400 mt-0.5">ефективність</p>
+                </div>
+              </div>
+              {/* mini bar */}
+              {todayStats.linesRan > 0 && (
+                <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                    style={{ width: `${todayStats.rate}%` }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Subdivision progress */}
