@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@property --status-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes status-glow-spin {
+  0% {
+    --status-angle: 0deg;
+  }
+
+  100% {
+    --status-angle: 360deg;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+    overscroll-behavior: none;
+  }
+
+  * {
+    @apply box-border;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .status-glow-button {
+    position: relative;
+    border: none;
+    background: none;
+    padding: 1px;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .status-glow-button::before,
+  .status-glow-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 0.8rem;
+    background-image: conic-gradient(
+      from var(--status-angle) at 50% 50%,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 30%,
+      var(--status-color) 50%,
+      rgba(255, 255, 255, 0) 70%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: status-glow-spin 4.6s linear infinite;
+  }
+
+  .status-glow-button::before {
+    inset: 1px;
+    filter: blur(9px);
+    opacity: 0.32;
+  }
+
+  .status-glow-button::after {
+    inset: 0;
+    opacity: 0.82;
+  }
+
+  .status-glow-button__inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: 50px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.72rem;
+    padding: 0.625rem 1rem;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--status-color) 34%, white) 0%,
+      color-mix(in srgb, var(--status-color) 24%, white) 100%
+    );
+    color: var(--status-color);
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--status-color) 54%, white),
+      0 0 0 1px color-mix(in srgb, var(--status-color) 18%, white);
+  }
+
+  .status-glow-button:active {
+    transform: scale(0.98);
+  }
+
+  .status-glow-card {
+    position: relative;
+    background: color-mix(in srgb, var(--status-color) 8%, white);
+    box-shadow:
+      0 0 0 1.5px color-mix(in srgb, var(--status-color) 22%, white),
+      0 0 20px color-mix(in srgb, var(--status-color) 16%, transparent),
+      0 0 34px color-mix(in srgb, var(--status-color) 10%, transparent);
+  }
+
+  .status-glow-card::before,
+  .status-glow-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--status-angle) at 50% 50%,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 26%,
+      color-mix(in srgb, var(--status-color) 52%, white) 50%,
+      rgba(255, 255, 255, 0) 74%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: status-glow-spin 6.2s linear infinite;
+    pointer-events: none;
+  }
+
+  .status-glow-card::before {
+    filter: blur(3px);
+    opacity: 0.72;
+  }
+
+  .status-glow-card::after {
+    opacity: 0.95;
+  }
+}
