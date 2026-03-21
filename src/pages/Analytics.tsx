@@ -363,29 +363,6 @@ export function Analytics({ user }: Props) {
           </div>
         </div>
 
-        {/* Stale lines (need attention) */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Потребують уваги</h2>
-          <p className="text-xs text-gray-400 mb-3">Лінії, які найдовше не оновлювались</p>
-          {stalestLines.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">Немає даних</p>
-          ) : (
-            <div className="space-y-2">
-              {stalestLines.map(line => (
-                <div key={line.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    {line.status && (
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: line.status.color }} />
-                    )}
-                    <span className="text-sm text-gray-700">{line.name}</span>
-                  </div>
-                  <span className="text-xs text-gray-400">{timeAgo(line.updated_at)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* Recent events preview */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Останні події</h2>

@@ -219,7 +219,6 @@ function ProductionTable({ lines, events }: { lines: Line[]; events: Event[] }) 
             <th className="text-left py-2 font-medium">Лінія</th>
             <th className="text-left py-2 font-medium">Статус</th>
             <th className="text-center py-2 font-medium">Подій</th>
-            <th className="text-right py-2 font-medium">Оновлення</th>
           </tr>
         </thead>
         <tbody>
@@ -250,7 +249,6 @@ function ProductionTable({ lines, events }: { lines: Line[]; events: Event[] }) 
               <td className="py-3 text-center">
                 <span className="font-semibold text-gray-700">{lineEvents.get(line.name) ?? 0}</span>
               </td>
-              <td className="py-3 text-right text-xs text-gray-400">{timeAgo(line.updated_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -762,18 +760,10 @@ export function DataAnalytics({ user }: Props) {
 
           {/* Completion rate gauge */}
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col items-center justify-center">
-            <div className="flex items-center justify-between w-full mb-2">
+            <div className="flex items-center w-full mb-2">
               <h2 className="text-base font-semibold text-gray-800">Рівень завершення</h2>
-              <button className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
             </div>
-            <GaugeChart value={completionRate} target={80} label={`Ціль: 80%`} />
-            <button className="mt-2 text-xs text-indigo-600 font-medium hover:underline">
-              Детальніше →
-            </button>
+            <GaugeChart value={completionRate} target={80} label="" />
           </div>
 
           {/* Subdivision progress */}
@@ -787,13 +777,8 @@ export function DataAnalytics({ user }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Production table */}
           <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center mb-4">
               <h2 className="text-base font-semibold text-gray-800">Топ ліній виробництва</h2>
-              <button className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
             </div>
             <ProductionTable lines={activeLines} events={events} />
           </div>
@@ -839,7 +824,6 @@ export function DataAnalytics({ user }: Props) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-semibold text-gray-800">Процес по картках за день</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Кожен колір = статус лінії · ✓ = завершений процес</p>
             </div>
             <span className="text-xs text-gray-400">
               {new Date().toLocaleDateString('uk-UA', { day: '2-digit', month: 'long' })}
