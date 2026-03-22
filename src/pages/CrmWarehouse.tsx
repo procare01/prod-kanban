@@ -485,7 +485,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           </span>
                         )}
                         <span className="text-gray-400 text-xs">
-                          {new Date(e.created_at).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          {new Date(e.created_at).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv' })}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-gray-600">
