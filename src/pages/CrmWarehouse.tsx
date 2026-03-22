@@ -653,59 +653,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )}
                 </div>
 
-                {/* Bonus table — crm_admin / admin 1505, users with >= 80 orders */}
-                {showBonusAsAdmin && analyticsDayData && analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
-                  const byUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
-                  analyticsDayData.entries.forEach(e => {
-                    if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0 }
-                    byUser[e.user_id].orders += e.orders_count
-                  })
-                  const rows = Object.values(byUser)
-                  const bonusRows = rows.filter(u => u.orders >= 80)
-                  if (bonusRows.length === 0) return (
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Бонуси співробітників</p>
-                      <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
-                    </div>
-                  )
-                  const totalBonus = rows.reduce((s, u) => s + calcBonus(u.orders, bonusSettings), 0)
-                  return (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
-                        <span className="text-sm font-bold text-yellow-700">Всього: {totalBonus} грн</span>
-                      </div>
-                      <div className="space-y-2">
-                        {rows.map(u => {
-                          const bonus = calcBonus(u.orders, bonusSettings)
-                          return (
-                            <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
-                              <div>
-                                <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                <p className="text-xs text-gray-400">{u.orders} замовлень</p>
-                              </div>
-                              <div className="text-right">
-                                {bonus > 0 ? (
-                                  <>
-                                    <p className="text-base font-bold text-yellow-700">{bonus} грн</p>
-                                    <p className="text-xs text-gray-400">
-                                      {u.orders <= 100
-                                        ? `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_mid}`
-                                        : `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_high}`}
-                                    </p>
-                                  </>
-                                ) : (
-                                  <p className="text-sm text-gray-300">— грн</p>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })()}
-
                 {/* Monthly totals */}
                 {analytics.monthly && (
                   <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -760,6 +707,59 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
                   )}
                 </div>
+
+                {/* Bonus table — crm_admin / admin 1505/7985, users with >= 80 orders */}
+                {showBonusAsAdmin && analyticsDayData && analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
+                  const byUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
+                  analyticsDayData.entries.forEach(e => {
+                    if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0 }
+                    byUser[e.user_id].orders += e.orders_count
+                  })
+                  const rows = Object.values(byUser)
+                  const bonusRows = rows.filter(u => u.orders >= 80)
+                  if (bonusRows.length === 0) return (
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Бонуси співробітників</p>
+                      <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
+                    </div>
+                  )
+                  const totalBonus = rows.reduce((s, u) => s + calcBonus(u.orders, bonusSettings), 0)
+                  return (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                        <span className="text-sm font-bold text-yellow-700">Всього: {totalBonus} грн</span>
+                      </div>
+                      <div className="space-y-2">
+                        {rows.map(u => {
+                          const bonus = calcBonus(u.orders, bonusSettings)
+                          return (
+                            <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
+                                <p className="text-xs text-gray-400">{u.orders} замовлень</p>
+                              </div>
+                              <div className="text-right">
+                                {bonus > 0 ? (
+                                  <>
+                                    <p className="text-base font-bold text-yellow-700">{bonus} грн</p>
+                                    <p className="text-xs text-gray-400">
+                                      {u.orders <= 100
+                                        ? `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_mid}`
+                                        : `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_high}`}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <p className="text-sm text-gray-300">— грн</p>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Monthly bonus — crm_admin sees all users, crm sees own */}
                 {monthlyBonus.length > 0 && (
