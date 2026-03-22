@@ -470,43 +470,49 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {/* Last 40 entries */}
             {recentEntries.length > 0 && (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Останні записи
-                </p>
-                <div className="space-y-2">
-                  {recentEntries.map(e => (
-                    <div
-                      key={e.id}
-                      className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0"
-                    >
-                      <div className="flex items-center gap-2">
-                        {isAdmin && (
-                          <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            {e.user_name}
-                          </span>
-                        )}
-                        <span className="text-gray-400 text-xs">
-                          {new Date(e.created_at).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv' })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-600">
-                        {calcBonus(e.orders_count, bonusSettings) > 0 && (
-                          <span className="font-semibold text-amber-600">
-                            {calcBonus(e.orders_count, bonusSettings)} грн
-                          </span>
-                        )}
-                        <span>
-                          <span className="font-semibold text-gray-800">{e.orders_count}</span>
-                          <span className="text-gray-400 ml-1">замовл.</span>
-                        </span>
-                        <span>
-                          <span className="font-semibold text-gray-800">{e.units_count}</span>
-                          <span className="text-gray-400 ml-1">од.</span>
-                        </span>
+                <p className="text-sm font-semibold text-gray-700 mb-3">Останні записи</p>
+                <div className="space-y-1.5">
+                  {recentEntries.map(e => {
+                    const bonus = calcBonus(e.orders_count, bonusSettings)
+                    const dateStr = new Date(e.created_at).toLocaleString('uk-UA', {
+                      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                      timeZone: 'Europe/Kyiv'
+                    })
+                    return (
+                      <div key={e.id} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
+                        {/* Left: name + date */}
+                        <div className="flex-1 min-w-0">
+                          {isAdmin && (
+                            <p className="text-xs font-semibold text-emerald-700 truncate">{e.user_name}</p>
+                          )}
+                          <p className="text-xs text-gray-400">{dateStr}</p>
+                        </div>
+
+                        {/* Bonus */}
+                        <div className="w-16 text-right">
+                          {bonus > 0
+                            ? <span className="text-sm font-bold text-amber-500">{bonus} грн</span>
+                            : <span className="text-xs text-gray-200">—</span>
+                          }
+                        </div>
+
+                        {/* Orders */}
+                        <div className="w-20 text-right">
+                          <span className="text-sm font-bold text-gray-800">{e.orders_count}</span>
+                          <span className="text-xs text-gray-400 ml-1">замовл.</span>
+                        </div>
+
+                        {/* Units */}
+                        <div className="w-20 text-right">
+                          <span className="text-sm font-bold text-gray-800">{e.units_count}</span>
+                          <span className="text-xs text-gray-400 ml-1">од.</span>
+                        </div>
+
+                        {/* Delete */}
                         <button
                           onClick={() => handleDelete(e.id)}
                           disabled={deleting === e.id}
-                          className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 ml-1"
+                          className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 ml-1 flex-shrink-0"
                         >
                           {deleting === e.id
                             ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
@@ -516,8 +522,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           }
                         </button>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
