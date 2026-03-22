@@ -23,7 +23,8 @@ function formatDisplayDate(iso: string) {
 
 // ─── Bonus calculation ────────────────────────────────────────────────────────
 interface BonusSettings { threshold: number; rate_mid: number; rate_high: number }
-const DEFAULT_BONUS: BonusSettings = { threshold: 80, rate_mid: 6, rate_high: 8 }
+// threshold=79: bonus starts at 80 orders, i.e. (orders−79)×rate
+const DEFAULT_BONUS: BonusSettings = { threshold: 79, rate_mid: 6, rate_high: 8 }
 
 function calcBonus(orders: number, s: BonusSettings = DEFAULT_BONUS): number {
   if (orders <= s.threshold) return 0
@@ -339,11 +340,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           {bonus > 0 ? `${bonus} грн` : '0 грн'}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {totalOrders <= 80
-                            ? 'Потрібно більше 80 замовлень'
+                          {totalOrders < 80
+                            ? 'Потрібно від 80 замовлень'
                             : totalOrders <= 100
-                              ? `(${totalOrders} − 80) × 6 грн`
-                              : `(${totalOrders} − 80) × 8 грн`}
+                              ? `(${totalOrders} − ${bonusSettings.threshold}) × ${bonusSettings.rate_mid} грн`
+                              : `(${totalOrders} − ${bonusSettings.threshold}) × ${bonusSettings.rate_high} грн`}
                         </p>
                       </div>
                       <span className="text-3xl">🏆</span>
@@ -584,11 +585,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                 {/* Bonus table — crm_admin / admin 1505, users with > 80 orders */}
                 {showBonusAsAdmin && analytics.by_user_today && analytics.by_user_today.length > 0 && (() => {
-                  const bonusRows = analytics.by_user_today.filter(u => u.total_orders > 80)
+                  const bonusRows = analytics.by_user_today.filter(u => u.total_orders >= 80)
                   if (bonusRows.length === 0) return (
                     <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                       <p className="text-sm font-semibold text-gray-700 mb-1">Бонуси співробітників</p>
-                      <p className="text-sm text-gray-400">Поки ніхто не перевищив 80 замовлень</p>
+                      <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
                     </div>
                   )
                   const totalBonus = bonusRows.reduce((s, u) => s + calcBonus(u.total_orders, bonusSettings), 0)
@@ -725,7 +726,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 <div className="space-y-3">
                   <div>
                     <label className="text-xs text-gray-400 mb-1 block">
-                      Ставка за 1 замовлення (81–100)
+                      Ставка за 1 замовлення (80–100)
                     </label>
                     <div className="flex items-center gap-2">
                       <input
