@@ -90,47 +90,44 @@ BEGIN
 
     -- daily series (for 7d / 30d charts)
     'daily', (
-      SELECT COALESCE(
-        json_agg(
-          json_build_object(
-            'date',   TO_CHAR(d.day, 'YYYY-MM-DD'),
-            'orders', COALESCE(SUM(ce.orders_count), 0),
-            'units',  COALESCE(SUM(ce.units_count),  0)
-          ) ORDER BY d.day
-        ),
-        '[]'::json
-      )
-      FROM generate_series(
-        CURRENT_DATE - (p_days - 1) * INTERVAL '1 day',
-        CURRENT_DATE,
-        INTERVAL '1 day'
-      ) AS d(day)
-      LEFT JOIN crm_entries ce
-        ON DATE(ce.created_at AT TIME ZONE 'UTC') = d.day
-        AND (p_is_admin OR ce.user_id = p_user_id)
-      GROUP BY d.day
+      SELECT COALESCE(json_agg(row_data ORDER BY (row_data->>'date')), '[]'::json)
+      FROM (
+        SELECT json_build_object(
+          'date',   TO_CHAR(d.day, 'YYYY-MM-DD'),
+          'orders', COALESCE(SUM(ce.orders_count), 0),
+          'units',  COALESCE(SUM(ce.units_count),  0)
+        ) AS row_data
+        FROM generate_series(
+          CURRENT_DATE - (p_days - 1) * INTERVAL '1 day',
+          CURRENT_DATE,
+          INTERVAL '1 day'
+        ) AS d(day)
+        LEFT JOIN crm_entries ce
+          ON DATE(ce.created_at AT TIME ZONE 'UTC') = d.day
+          AND (p_is_admin OR ce.user_id = p_user_id)
+        GROUP BY d.day
+        ORDER BY d.day
+      ) sub
     ),
 
     -- per-user KPI for today (orders/8h, units/8h)
     'by_user_today', (
-      SELECT COALESCE(
-        json_agg(
-          json_build_object(
-            'user_id',          u.id,
-            'user_name',        u.name,
-            'total_orders',     SUM(ce.orders_count),
-            'total_units',      SUM(ce.units_count),
-            'orders_per_hour',  ROUND(SUM(ce.orders_count)::numeric / 8, 2),
-            'units_per_hour',   ROUND(SUM(ce.units_count)::numeric / 8, 2)
-          )
-        ),
-        '[]'::json
-      )
-      FROM crm_entries ce
-      JOIN users u ON u.id = ce.user_id
-      WHERE DATE(ce.created_at AT TIME ZONE 'UTC') = CURRENT_DATE
-        AND (p_is_admin OR ce.user_id = p_user_id)
-      GROUP BY u.id, u.name
+      SELECT COALESCE(json_agg(row_data), '[]'::json)
+      FROM (
+        SELECT json_build_object(
+          'user_id',         u.id,
+          'user_name',       u.name,
+          'total_orders',    SUM(ce.orders_count),
+          'total_units',     SUM(ce.units_count),
+          'orders_per_hour', ROUND(SUM(ce.orders_count)::numeric / 8, 2),
+          'units_per_hour',  ROUND(SUM(ce.units_count)::numeric / 8, 2)
+        ) AS row_data
+        FROM crm_entries ce
+        JOIN users u ON u.id = ce.user_id
+        WHERE DATE(ce.created_at AT TIME ZONE 'UTC') = CURRENT_DATE
+          AND (p_is_admin OR ce.user_id = p_user_id)
+        GROUP BY u.id, u.name
+      ) sub
     ),
 
     -- monthly totals
