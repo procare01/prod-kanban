@@ -23,8 +23,9 @@ function formatDisplayDate(iso: string) {
 
 // ─── Bonus calculation ────────────────────────────────────────────────────────
 interface BonusSettings { threshold: number; rate_mid: number; rate_high: number }
-// threshold=79: bonus starts at 80 orders, i.e. (orders−79)×rate
-const DEFAULT_BONUS: BonusSettings = { threshold: 79, rate_mid: 6, rate_high: 8 }
+// threshold=80: ≤80 → 0, 81–100 → (orders−80)×rate_mid, 101+ → (orders−80)×rate_high
+// e.g. 81 orders → 6 грн, 101 orders → 168 грн
+const DEFAULT_BONUS: BonusSettings = { threshold: 80, rate_mid: 6, rate_high: 8 }
 
 function calcBonus(orders: number, s: BonusSettings = DEFAULT_BONUS): number {
   if (orders <= s.threshold) return 0
