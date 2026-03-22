@@ -71,9 +71,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const navigate = useNavigate()
   const isAdmin = user.role === 'admin' || user.role === 'crm_admin'
 
-  const [tab, setTab] = useState<Tab>('input')
+  const isCrmAdmin = user.role === 'crm_admin'
+  const isCrm = user.role === 'crm'
+  const [tab, setTab] = useState<Tab>(isCrmAdmin ? 'analytics' : 'input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
-  const isCrm = user.role === 'crm' // crm_admin sees analytics tab
 
   // Input form
   const [orders, setOrders] = useState('')
@@ -235,8 +236,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* Tabs — analytics hidden for crm role */}
-        {!isCrm && (
+        {/* Tabs: crm sees only input, crm_admin sees only analytics, admin sees both */}
+        {!isCrm && !isCrmAdmin && (
           <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
             {(['input', 'analytics'] as Tab[]).map(t => (
               <button
