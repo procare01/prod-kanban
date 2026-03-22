@@ -20,9 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAGES: "true"
-      # These are public client-side values for the static app.
-      VITE_SUPABASE_URL: https://uvcywcoirmotdlsegpvd.supabase.co
-      VITE_SUPABASE_ANON_KEY: sb_publishable_Mc2FMDYTSx20_KB4WX2MdA_khsd0UWp
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
