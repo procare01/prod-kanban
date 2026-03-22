@@ -21,6 +21,16 @@ function formatDisplayDate(iso: string) {
   return `${d}.${m}.${y.slice(2)}`
 }
 
+// ─── Bonus calculation ────────────────────────────────────────────────────────
+// 0–80 orders  → 0 UAH
+// 81–100       → (orders − 80) × 6 UAH
+// 101+         → (orders − 80) × 8 UAH
+function calcBonus(orders: number): number {
+  if (orders <= 80) return 0
+  if (orders <= 100) return (orders - 80) * 6
+  return (orders - 80) * 8
+}
+
 // ─── Mini bar chart ───────────────────────────────────────────────────────────
 function MiniBarChart({ data, color, label }: {
   data: CrmDailyPoint[]
@@ -282,6 +292,66 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </div>
             </div>
 
+            {/* Bonus card — shown only if orders > 80 */}
+            {!loadingDay && (() => {
+              // For crm role show own bonus; for admin/crm_admin show per-user breakdown
+              if (!isAdmin) {
+                const bonus = calcBonus(totalOrders)
+                if (bonus === 0 && totalOrders <= 80) return null
+                return (
+                  <div className={`rounded-2xl p-4 shadow-sm border ${bonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-0.5">Бонус за день</p>
+                        <p className={`text-2xl font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
+                          {bonus > 0 ? `${bonus} грн` : '0 грн'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {totalOrders <= 80
+                            ? 'Потрібно більше 80 замовлень'
+                            : totalOrders <= 100
+                              ? `(${totalOrders} − 80) × 6 грн`
+                              : `(${totalOrders} − 80) × 8 грн`}
+                        </p>
+                      </div>
+                      <span className="text-3xl">🏆</span>
+                    </div>
+                  </div>
+                )
+              }
+              // Admin/crm_admin: per-user bonus table
+              if (!dayData?.entries || dayData.entries.length === 0) return null
+              // Group by user
+              const byUser: Record<string, { name: string; orders: number }> = {}
+              dayData.entries.forEach(e => {
+                if (!byUser[e.user_id]) byUser[e.user_id] = { name: e.user_name, orders: 0 }
+                byUser[e.user_id].orders += e.orders_count
+              })
+              const rows = Object.values(byUser).filter(u => u.orders > 0)
+              if (rows.length === 0) return null
+              return (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Бонуси за день</p>
+                  <div className="space-y-2">
+                    {rows.map(u => {
+                      const bonus = calcBonus(u.orders)
+                      return (
+                        <div key={u.name} className="flex items-center justify-between text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">{u.name}</span>
+                            <span className="text-xs text-gray-400 ml-2">{u.orders} замовл.</span>
+                          </div>
+                          <span className={`font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
+                            {bonus > 0 ? `${bonus} грн` : '—'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Input form */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-4">
               <p className="text-sm font-semibold text-gray-700">Додати запис</p>
@@ -429,7 +499,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                               <div key={u.user_id} className="border border-gray-100 rounded-xl p-3">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                  <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
+                                  <div className="flex items-center gap-2">
+                                    {calcBonus(u.total_orders) > 0 && (
+                                      <span className="text-xs font-bold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
+                                        {calcBonus(u.total_orders)} грн
+                                      </span>
+                                    )}
+                                    <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
+                                  </div>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div>
