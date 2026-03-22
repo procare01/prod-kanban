@@ -74,7 +74,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const isCrmAdmin = user.role === 'crm_admin'
   const isCrm = user.role === 'crm'
-  const showBonusAsAdmin = user.role === 'crm_admin' || (user.role === 'admin' && user.pin === '1505')
+  const isAdminWithCrmAccess = user.role === 'admin' && (user.pin === '1505' || user.pin === '7985')
+  const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
   const [tab, setTab] = useState<Tab>(isCrmAdmin ? 'analytics' : 'input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
 

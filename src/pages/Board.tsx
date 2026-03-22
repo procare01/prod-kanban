@@ -155,8 +155,8 @@ export function Board({ user, onLogout }: Props) {
           </button>
         )}
 
-        {/* CRM Warehouse (crm role OR admin with PIN 1505) */}
-        {(user.role === 'crm' || (user.role === 'admin' && user.pin === '1505')) && (
+        {/* CRM Warehouse (crm role OR admin with PIN 1505/7985) */}
+        {(user.role === 'crm' || (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))) && (
           <button
             onClick={() => navigate('/crm')}
             className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-100
