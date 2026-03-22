@@ -534,6 +534,53 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )}
                 </div>
 
+                {/* Bonus table — crm_admin only, users with > 80 orders */}
+                {isCrmAdmin && analytics.by_user_today && analytics.by_user_today.length > 0 && (() => {
+                  const bonusRows = analytics.by_user_today.filter(u => u.total_orders > 80)
+                  if (bonusRows.length === 0) return (
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Бонуси співробітників</p>
+                      <p className="text-sm text-gray-400">Поки ніхто не перевищив 80 замовлень</p>
+                    </div>
+                  )
+                  const totalBonus = bonusRows.reduce((s, u) => s + calcBonus(u.total_orders), 0)
+                  return (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                        <span className="text-sm font-bold text-yellow-700">Всього: {totalBonus} грн</span>
+                      </div>
+                      <div className="space-y-2">
+                        {analytics.by_user_today.map(u => {
+                          const bonus = calcBonus(u.total_orders)
+                          return (
+                            <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
+                                <p className="text-xs text-gray-400">{u.total_orders} замовлень</p>
+                              </div>
+                              <div className="text-right">
+                                {bonus > 0 ? (
+                                  <>
+                                    <p className="text-base font-bold text-yellow-700">{bonus} грн</p>
+                                    <p className="text-xs text-gray-400">
+                                      {u.total_orders <= 100
+                                        ? `(${u.total_orders}−80)×6`
+                                        : `(${u.total_orders}−80)×8`}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <p className="text-sm text-gray-300">— грн</p>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 {/* Chart: orders */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-3">
