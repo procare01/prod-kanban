@@ -6,6 +6,7 @@ import { Board } from './pages/Board'
 import { Admin } from './pages/Admin'
 import { Analytics } from './pages/Analytics'
 import { DataAnalytics } from './pages/DataAnalytics'
+import { CrmWarehouse } from './pages/CrmWarehouse'
 
 function AppInner() {
   const { user, loading, error, login, logout } = useAuth()
@@ -22,22 +23,33 @@ function AppInner() {
     return <PinLogin onLogin={login} error={error} loading={loading} />
   }
 
+  // CRM users go directly to the warehouse page
+  const isCrm = user.role === 'crm'
+  const isAdmin = user.role === 'admin'
+
   return (
     <Routes>
-      <Route path="/" element={<Board user={user} onLogout={logout} />} />
+      <Route
+        path="/"
+        element={isCrm ? <Navigate to="/crm" replace /> : <Board user={user} onLogout={logout} />}
+      />
       <Route
         path="/admin"
-        element={user.role === 'admin' ? <Admin user={user} /> : <Navigate to="/" replace />}
+        element={isAdmin ? <Admin user={user} /> : <Navigate to="/" replace />}
       />
       <Route
         path="/analytics"
-        element={user.role === 'admin' ? <Analytics user={user} /> : <Navigate to="/" replace />}
+        element={isAdmin ? <Analytics user={user} /> : <Navigate to="/" replace />}
       />
       <Route
         path="/data-analytics"
-        element={user.role === 'admin' ? <DataAnalytics user={user} /> : <Navigate to="/" replace />}
+        element={isAdmin ? <DataAnalytics user={user} /> : <Navigate to="/" replace />}
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="/crm"
+        element={(isCrm || isAdmin) ? <CrmWarehouse user={user} onLogout={logout} /> : <Navigate to="/" replace />}
+      />
+      <Route path="*" element={<Navigate to={isCrm ? '/crm' : '/'} replace />} />
     </Routes>
   )
 }

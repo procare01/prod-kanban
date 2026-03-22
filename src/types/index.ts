@@ -1,4 +1,4 @@
-export type Role = 'brigadir' | 'controller' | 'admin'
+export type Role = 'brigadir' | 'controller' | 'admin' | 'crm'
 
 export interface User {
   id: string
@@ -76,6 +76,42 @@ export interface EventWithWebhook extends Event {
   webhook_status: 'sent' | 'failed' | 'pending' | null
   webhook_error: string | null
   webhook_sent_at: string | null
+}
+
+export interface CrmEntry {
+  id: string
+  user_id: string
+  user_name: string
+  orders_count: number
+  units_count: number
+  created_at: string
+}
+
+export interface CrmTodayData {
+  total_orders: number
+  total_units: number
+  entries: CrmEntry[]
+}
+
+export interface CrmUserKpi {
+  user_id: string
+  user_name: string
+  total_orders: number
+  total_units: number
+  orders_per_hour: number
+  units_per_hour: number
+}
+
+export interface CrmDailyPoint {
+  date: string
+  orders: number
+  units: number
+}
+
+export interface CrmAnalytics {
+  daily: CrmDailyPoint[]
+  by_user_today: CrmUserKpi[]
+  monthly: { total_orders: number; total_units: number }
 }
 
 export interface WorkSettings {

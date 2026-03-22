@@ -155,6 +155,24 @@ export function Board({ user, onLogout }: Props) {
           </button>
         )}
 
+        {/* CRM Warehouse (crm role OR admin with PIN 1505) */}
+        {(user.role === 'crm' || (user.role === 'admin' && user.pin === '1505')) && (
+          <button
+            onClick={() => navigate('/crm')}
+            className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-100
+                       rounded-2xl px-4 py-3 hover:bg-emerald-100 active:bg-emerald-200 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span className="text-sm font-semibold text-emerald-700">Склад CRM</span>
+            </div>
+            <span className="text-emerald-400">›</span>
+          </button>
+        )}
+
         {/* Work day end banner (admin only) */}
         {workEndBanner && user.role === 'admin' && (
           <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-center justify-between gap-3">
