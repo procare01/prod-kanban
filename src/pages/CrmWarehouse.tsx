@@ -629,20 +629,20 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                               </div>
                             ))}
                             {/* Total row */}
-                            <div className="border-t border-gray-100 pt-2 flex items-center justify-between">
-                              <span className="text-xs font-semibold text-gray-500">Всього</span>
-                              <div className="flex items-center gap-3 text-xs">
+                            <div className="border-t-2 border-gray-200 mt-2 pt-3 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                              <span className="text-base font-bold text-gray-600">Всього</span>
+                              <div className="flex items-center gap-4">
                                 <span>
-                                  <span className="font-bold text-emerald-700">
+                                  <span className="text-2xl font-bold text-emerald-700">
                                     {rows.reduce((s, u) => s + u.orders, 0)}
                                   </span>
-                                  <span className="text-gray-400 ml-1">замовл.</span>
+                                  <span className="text-sm text-gray-400 ml-1">замовл.</span>
                                 </span>
                                 <span>
-                                  <span className="font-bold text-blue-700">
+                                  <span className="text-2xl font-bold text-blue-700">
                                     {rows.reduce((s, u) => s + u.units, 0)}
                                   </span>
-                                  <span className="text-gray-400 ml-1">од.</span>
+                                  <span className="text-sm text-gray-400 ml-1">од.</span>
                                 </span>
                               </div>
                             </div>
