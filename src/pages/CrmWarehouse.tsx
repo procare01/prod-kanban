@@ -270,8 +270,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 <div>
                   <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
                   <input
-                    type="number" min="0" value={orders}
-                    onChange={e => setOrders(e.target.value)} placeholder="0"
+                    type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
+                    onChange={e => setOrders(e.target.value.replace(/\D/g, ''))} placeholder="0"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
                                text-gray-800 placeholder-gray-300"
@@ -280,8 +280,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 <div>
                   <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
                   <input
-                    type="number" min="0" value={units}
-                    onChange={e => setUnits(e.target.value)} placeholder="0"
+                    type="text" inputMode="numeric" pattern="[0-9]*" value={units}
+                    onChange={e => setUnits(e.target.value.replace(/\D/g, ''))} placeholder="0"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
                                text-gray-800 placeholder-gray-300"
