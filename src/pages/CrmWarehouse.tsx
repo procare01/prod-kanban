@@ -12,20 +12,17 @@ type Tab = 'input' | 'analytics'
 type ChartPeriod = '7d' | '30d'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatDate(d: Date) {
-  return d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' })
+function toDateInputValue(d: Date) {
+  return d.toISOString().slice(0, 10) // YYYY-MM-DD for <input type="date">
 }
 
-function todayLabel() {
-  return formatDate(new Date())
+function formatDisplayDate(iso: string) {
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y.slice(2)}`
 }
 
-// ─── Mini area/bar chart ──────────────────────────────────────────────────────
-function MiniBarChart({
-  data,
-  color,
-  label,
-}: {
+// ─── Mini bar chart ───────────────────────────────────────────────────────────
+function MiniBarChart({ data, color, label }: {
   data: CrmDailyPoint[]
   color: 'emerald' | 'blue'
   label: 'orders' | 'units'
@@ -43,32 +40,18 @@ function MiniBarChart({
         const v = label === 'orders' ? d.orders : d.units
         const bh = Math.max((v / max) * (H - 4), v > 0 ? 4 : 0)
         const x = i * (barW + 2)
-        return (
-          <rect
-            key={i}
-            x={x}
-            y={H - bh}
-            width={barW}
-            height={bh}
-            rx={2}
-            fill={fill}
-            opacity={0.8}
-          />
-        )
+        return <rect key={i} x={x} y={H - bh} width={barW} height={bh} rx={2} fill={fill} opacity={0.8} />
       })}
     </svg>
   )
 }
 
-// ─── KPI gauge bar ────────────────────────────────────────────────────────────
+// ─── KPI bar ──────────────────────────────────────────────────────────────────
 function KpiBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
   return (
     <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
-      <div
-        className="h-1.5 rounded-full transition-all"
-        style={{ width: `${pct}%`, backgroundColor: color }}
-      />
+      <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
     </div>
   )
 }
@@ -84,27 +67,32 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   // Input form
   const [orders, setOrders] = useState('')
   const [units, setUnits] = useState('')
+  const [selectedDate, setSelectedDate] = useState(toDateInputValue(new Date()))
   const [submitting, setSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   // Data
-  const [todayData, setTodayData] = useState<CrmTodayData | null>(null)
+  const [dayData, setDayData] = useState<CrmTodayData | null>(null)
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
-  const [loadingToday, setLoadingToday] = useState(true)
+  const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
 
-  // ── Fetch today data ────────────────────────────────────────────────────────
-  const fetchToday = useCallback(async () => {
-    setLoadingToday(true)
+  const isToday = selectedDate === toDateInputValue(new Date())
+
+  // ── Fetch entries for selected date ─────────────────────────────────────────
+  const fetchDay = useCallback(async (date: string) => {
+    setLoadingDay(true)
     try {
       const { data } = await supabase.rpc('get_crm_today', {
         p_user_id: user.id,
         p_is_admin: isAdmin,
+        p_date: date,
       })
-      if (data) setTodayData(data as CrmTodayData)
+      if (data) setDayData(data as CrmTodayData)
     } catch {/* ignore */} finally {
-      setLoadingToday(false)
+      setLoadingDay(false)
     }
   }, [user.id, isAdmin])
 
@@ -123,12 +111,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     }
   }, [user.id, isAdmin])
 
-  useEffect(() => { fetchToday() }, [fetchToday])
+  useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
 
   useEffect(() => {
-    if (tab === 'analytics') {
-      fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
-    }
+    if (tab === 'analytics') fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
   }, [tab, chartPeriod, fetchAnalytics])
 
   // ── Submit entry ────────────────────────────────────────────────────────────
@@ -142,16 +128,19 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     setSubmitting(true)
     setSubmitError('')
     try {
+      // Build timestamp at noon on selected date so timezone shifts don't flip the day
+      const ts = `${selectedDate}T12:00:00Z`
       await supabase.rpc('submit_crm_entry', {
         p_user_id: user.id,
         p_orders: o,
         p_units: u,
+        p_created_at: ts,
       })
       setOrders('')
       setUnits('')
       setSubmitSuccess(true)
       setTimeout(() => setSubmitSuccess(false), 2500)
-      fetchToday()
+      fetchDay(selectedDate)
     } catch {
       setSubmitError('Помилка збереження. Спробуйте ще раз.')
     } finally {
@@ -159,22 +148,32 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     }
   }
 
-  // ── Chart data slice ────────────────────────────────────────────────────────
+  // ── Delete entry ─────────────────────────────────────────────────────────────
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Видалити цей запис?')) return
+    setDeleting(id)
+    try {
+      await supabase.rpc('delete_crm_entry', { p_id: id })
+      fetchDay(selectedDate)
+    } catch {/* ignore */} finally {
+      setDeleting(null)
+    }
+  }
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
   const chartData = useMemo(() => {
     if (!analytics?.daily) return []
-    const days = chartPeriod === '7d' ? 7 : 30
-    return analytics.daily.slice(-days)
+    return analytics.daily.slice(-(chartPeriod === '7d' ? 7 : 30))
   }, [analytics, chartPeriod])
 
-  // ── Today's own entries ─────────────────────────────────────────────────────
-  const myEntriesToday = useMemo(() => {
-    if (!todayData?.entries) return []
-    if (isAdmin) return todayData.entries
-    return todayData.entries.filter(e => e.user_id === user.id)
-  }, [todayData, isAdmin, user.id])
+  const entries = useMemo(() => {
+    if (!dayData?.entries) return []
+    if (isAdmin) return dayData.entries
+    return dayData.entries.filter(e => e.user_id === user.id)
+  }, [dayData, isAdmin, user.id])
 
-  const myOrdersToday = myEntriesToday.reduce((s, e) => s + e.orders_count, 0)
-  const myUnitsToday  = myEntriesToday.reduce((s, e) => s + e.units_count, 0)
+  const totalOrders = entries.reduce((s, e) => s + e.orders_count, 0)
+  const totalUnits  = entries.reduce((s, e) => s + e.units_count, 0)
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -184,10 +183,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isAdmin && (
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-400 hover:text-gray-600 mr-1"
-              >
+              <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 mr-1">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
@@ -201,7 +197,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             </div>
             <div>
               <p className="text-sm font-bold text-gray-800">Склад CRM</p>
-              <p className="text-xs text-gray-400">{user.name} · {todayLabel()}</p>
+              <p className="text-xs text-gray-400">{user.name}</p>
             </div>
           </div>
           <button
@@ -219,9 +215,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               key={t}
               onClick={() => setTab(t)}
               className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors
-                ${tab === t
-                  ? 'bg-emerald-500 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
             >
               {t === 'input' ? 'Введення даних' : 'Аналітика'}
             </button>
@@ -231,48 +225,63 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {/* ── INPUT TAB ──────────────────────────────────────────────────────── */}
         {tab === 'input' && (
           <>
+            {/* Date picker */}
+            <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-semibold text-gray-700">
+                  {isToday ? `Сьогодні · ${formatDisplayDate(selectedDate)}` : formatDisplayDate(selectedDate)}
+                </span>
+                {!isToday && (
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                    минуле
+                  </span>
+                )}
+              </div>
+              <input
+                type="date"
+                value={selectedDate}
+                max={toDateInputValue(new Date())}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
+                           focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              />
+            </div>
+
             {/* Quick stats */}
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <p className="text-xs text-gray-400 mb-1">Замовлень сьогодні</p>
-                <p className="text-2xl font-bold text-gray-800">{loadingToday ? '—' : myOrdersToday}</p>
+                <p className="text-xs text-gray-400 mb-1">{isToday ? 'Замовлень сьогодні' : 'Замовлень за день'}</p>
+                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalOrders}</p>
               </div>
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                 <p className="text-xs text-gray-400 mb-1">Одиниць товару</p>
-                <p className="text-2xl font-bold text-gray-800">{loadingToday ? '—' : myUnitsToday}</p>
+                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalUnits}</p>
               </div>
             </div>
 
             {/* Input form */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-4">
               <p className="text-sm font-semibold text-gray-700">Додати запис</p>
-
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs text-gray-500 font-medium block mb-1">
-                    Кількість замовлень
-                  </label>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
                   <input
-                    type="number"
-                    min="0"
-                    value={orders}
-                    onChange={e => setOrders(e.target.value)}
-                    placeholder="0"
+                    type="number" min="0" value={orders}
+                    onChange={e => setOrders(e.target.value)} placeholder="0"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
                                text-gray-800 placeholder-gray-300"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-medium block mb-1">
-                    Кількість одиниць товару
-                  </label>
+                  <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
                   <input
-                    type="number"
-                    min="0"
-                    value={units}
-                    onChange={e => setUnits(e.target.value)}
-                    placeholder="0"
+                    type="number" min="0" value={units}
+                    onChange={e => setUnits(e.target.value)} placeholder="0"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
                                text-gray-800 placeholder-gray-300"
@@ -284,9 +293,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{submitError}</p>
               )}
               {submitSuccess && (
-                <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">
-                  Збережено успішно
-                </p>
+                <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">Збережено успішно</p>
               )}
 
               <button
@@ -296,16 +303,18 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                            text-white font-semibold rounded-xl py-3 text-sm
                            disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {submitting ? 'Збереження...' : 'Зберегти'}
+                {submitting ? 'Збереження...' : `Зберегти за ${formatDisplayDate(selectedDate)}`}
               </button>
             </div>
 
-            {/* Today's entries log */}
-            {myEntriesToday.length > 0 && (
+            {/* Entries log */}
+            {entries.length > 0 && (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Записи за сьогодні</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  Записи · {formatDisplayDate(selectedDate)}
+                </p>
                 <div className="space-y-2">
-                  {myEntriesToday.map(e => (
+                  {entries.map(e => (
                     <div
                       key={e.id}
                       className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0"
@@ -317,10 +326,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           </span>
                         )}
                         <span className="text-gray-400 text-xs">
-                          {new Date(e.created_at).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(e.created_at).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <div className="flex gap-3 text-xs text-gray-600">
+                      <div className="flex items-center gap-3 text-xs text-gray-600">
                         <span>
                           <span className="font-semibold text-gray-800">{e.orders_count}</span>
                           <span className="text-gray-400 ml-1">замовл.</span>
@@ -329,6 +338,18 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           <span className="font-semibold text-gray-800">{e.units_count}</span>
                           <span className="text-gray-400 ml-1">од.</span>
                         </span>
+                        <button
+                          onClick={() => handleDelete(e.id)}
+                          disabled={deleting === e.id}
+                          className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 ml-1"
+                        >
+                          {deleting === e.id
+                            ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
+                            : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                          }
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -341,16 +362,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {/* ── ANALYTICS TAB ──────────────────────────────────────────────────── */}
         {tab === 'analytics' && (
           <>
-            {/* Period selector */}
             <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
               {(['7d', '30d'] as ChartPeriod[]).map(p => (
                 <button
                   key={p}
                   onClick={() => setChartPeriod(p)}
                   className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors
-                    ${chartPeriod === p
-                      ? 'bg-emerald-500 text-white'
-                      : 'text-gray-400 hover:text-gray-600'}`}
+                    ${chartPeriod === p ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   {p === '7d' ? '7 днів' : '1 місяць'}
                 </button>
@@ -365,43 +383,34 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {analytics && !loadingAnalytics && (
               <>
-                {/* Daily KPI today */}
+                {/* KPI today */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <p className="text-sm font-semibold text-gray-700 mb-3">ККД за сьогодні</p>
-                  {todayData && (
+                  {dayData && (
                     <>
-                      {/* Overall KPI */}
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="bg-emerald-50 rounded-xl p-3">
                           <p className="text-xs text-gray-400 mb-0.5">Замовлень/год</p>
-                          <p className="text-lg font-bold text-emerald-700">
-                            {(todayData.total_orders / 8).toFixed(1)}
-                          </p>
-                          <p className="text-xs text-gray-400">Всього: {todayData.total_orders}</p>
+                          <p className="text-lg font-bold text-emerald-700">{(dayData.total_orders / 8).toFixed(1)}</p>
+                          <p className="text-xs text-gray-400">Всього: {dayData.total_orders}</p>
                         </div>
                         <div className="bg-blue-50 rounded-xl p-3">
                           <p className="text-xs text-gray-400 mb-0.5">Одиниць/год</p>
-                          <p className="text-lg font-bold text-blue-700">
-                            {(todayData.total_units / 8).toFixed(1)}
-                          </p>
-                          <p className="text-xs text-gray-400">Всього: {todayData.total_units}</p>
+                          <p className="text-lg font-bold text-blue-700">{(dayData.total_units / 8).toFixed(1)}</p>
+                          <p className="text-xs text-gray-400">Всього: {dayData.total_units}</p>
                         </div>
                       </div>
-
-                      {/* Per-user KPI (admin sees all, crm sees self) */}
                       {analytics.by_user_today && analytics.by_user_today.length > 0 && (
                         <div className="space-y-3">
                           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                           {analytics.by_user_today.map(u => {
-                            const maxOrders = Math.max(...analytics.by_user_today.map(x => x.orders_per_hour), 1)
-                            const maxUnits  = Math.max(...analytics.by_user_today.map(x => x.units_per_hour), 1)
+                            const maxO = Math.max(...analytics.by_user_today.map(x => x.orders_per_hour), 1)
+                            const maxU = Math.max(...analytics.by_user_today.map(x => x.units_per_hour), 1)
                             return (
                               <div key={u.user_id} className="border border-gray-100 rounded-xl p-3">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                  <span className="text-xs text-gray-400">
-                                    {u.total_orders} замовл. · {u.total_units} од.
-                                  </span>
+                                  <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div>
@@ -409,14 +418,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                       <span>Замовлень/год</span>
                                       <span className="font-semibold text-emerald-600">{u.orders_per_hour}</span>
                                     </div>
-                                    <KpiBar value={u.orders_per_hour} max={maxOrders} color="#10b981" />
+                                    <KpiBar value={u.orders_per_hour} max={maxO} color="#10b981" />
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-xs text-gray-400">
                                       <span>Одиниць/год</span>
                                       <span className="font-semibold text-blue-600">{u.units_per_hour}</span>
                                     </div>
-                                    <KpiBar value={u.units_per_hour} max={maxUnits} color="#3b82f6" />
+                                    <KpiBar value={u.units_per_hour} max={maxU} color="#3b82f6" />
                                   </div>
                                 </div>
                               </div>
