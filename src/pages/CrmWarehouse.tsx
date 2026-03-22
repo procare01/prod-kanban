@@ -272,9 +272,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <input
                     type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
                     onChange={e => setOrders(e.target.value.replace(/\D/g, ''))} placeholder="0"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                    className="w-full border border-gray-200 rounded-xl px-4 py-4 text-sm
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                               text-gray-800 placeholder-gray-300"
+                               text-gray-800 placeholder-gray-300 text-lg"
                   />
                 </div>
                 <div>
@@ -282,9 +282,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <input
                     type="text" inputMode="numeric" pattern="[0-9]*" value={units}
                     onChange={e => setUnits(e.target.value.replace(/\D/g, ''))} placeholder="0"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm
+                    className="w-full border border-gray-200 rounded-xl px-4 py-4 text-sm
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                               text-gray-800 placeholder-gray-300"
+                               text-gray-800 placeholder-gray-300 text-lg"
                   />
                 </div>
               </div>
