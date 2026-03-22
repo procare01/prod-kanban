@@ -608,11 +608,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
                                   <div className="flex items-center gap-2">
-                                    {calcBonus(u.orders, bonusSettings) > 0 && (
-                                      <span className="text-xs font-bold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
-                                        {calcBonus(u.orders, bonusSettings)} грн
-                                      </span>
-                                    )}
                                     <span className="text-xs text-gray-400">{u.orders} замовл. · {u.units} од.</span>
                                   </div>
                                 </div>
