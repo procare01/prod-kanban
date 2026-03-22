@@ -87,8 +87,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [submitError, setSubmitError] = useState('')
   const [deleting, setDeleting] = useState<string | null>(null)
 
+  // Analytics date picker
+  const [analyticsDate, setAnalyticsDate] = useState(toDateInputValue(new Date()))
+  const isAnalyticsToday = analyticsDate === toDateInputValue(new Date())
+
   // Data
   const [dayData, setDayData] = useState<CrmTodayData | null>(null)
+  const [analyticsDayData, setAnalyticsDayData] = useState<CrmTodayData | null>(null)
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
   const [recentEntries, setRecentEntries] = useState<import('../types').CrmEntry[]>([])
   const [monthlyBonus, setMonthlyBonus] = useState<CrmMonthlyUserBonus[]>([])
@@ -114,6 +119,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     } catch {/* ignore */} finally {
       setLoadingDay(false)
     }
+  }, [user.id, isAdmin])
+
+  const fetchAnalyticsDay = useCallback(async (date: string) => {
+    try {
+      const { data } = await supabase.rpc('get_crm_today', {
+        p_user_id: user.id,
+        p_is_admin: isAdmin,
+        p_date: date,
+      })
+      if (data) setAnalyticsDayData(data as CrmTodayData)
+    } catch {/* ignore */}
   }, [user.id, isAdmin])
 
   // ── Fetch analytics ─────────────────────────────────────────────────────────
@@ -170,8 +186,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   useEffect(() => { fetchBonusSettings() }, [fetchBonusSettings])
 
   useEffect(() => {
-    if (tab === 'analytics') fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
-  }, [tab, chartPeriod, fetchAnalytics])
+    if (tab === 'analytics') {
+      fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
+      fetchAnalyticsDay(analyticsDate)
+    }
+  }, [tab, chartPeriod, fetchAnalytics, fetchAnalyticsDay, analyticsDate])
 
   // ── Submit entry ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -522,77 +541,109 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {analytics && !loadingAnalytics && (
               <>
-                {/* KPI today */}
+                {/* KPI for selected day */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">ККД за сьогодні</p>
-                  {dayData && (
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-700">
+                        ККД за {isAnalyticsToday ? 'сьогодні' : formatDisplayDate(analyticsDate)}
+                      </p>
+                      {!isAnalyticsToday && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">минуле</span>
+                      )}
+                    </div>
+                    <input
+                      type="date"
+                      value={analyticsDate}
+                      max={toDateInputValue(new Date())}
+                      onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
+                      className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
+                                 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+                  </div>
+                  {analyticsDayData && (
                     <>
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="bg-emerald-50 rounded-xl p-3">
                           <p className="text-xs text-gray-400 mb-0.5">Замовлень/год</p>
-                          <p className="text-lg font-bold text-emerald-700">{(dayData.total_orders / 8).toFixed(1)}</p>
-                          <p className="text-xs text-gray-400">Всього: {dayData.total_orders}</p>
+                          <p className="text-lg font-bold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
+                          <p className="text-xs text-gray-400">Всього: {analyticsDayData.total_orders}</p>
                         </div>
                         <div className="bg-blue-50 rounded-xl p-3">
                           <p className="text-xs text-gray-400 mb-0.5">Одиниць/год</p>
-                          <p className="text-lg font-bold text-blue-700">{(dayData.total_units / 8).toFixed(1)}</p>
-                          <p className="text-xs text-gray-400">Всього: {dayData.total_units}</p>
+                          <p className="text-lg font-bold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
+                          <p className="text-xs text-gray-400">Всього: {analyticsDayData.total_units}</p>
                         </div>
                       </div>
-                      {analytics.by_user_today && analytics.by_user_today.length > 0 && (
-                        <div className="space-y-3">
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
-                          {analytics.by_user_today.map(u => {
-                            const maxO = Math.max(...analytics.by_user_today.map(x => x.orders_per_hour), 1)
-                            const maxU = Math.max(...analytics.by_user_today.map(x => x.units_per_hour), 1)
-                            return (
+                      {analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
+                        // Group entries by user for per-user KPI
+                        const byUser: Record<string, { user_id: string; user_name: string; orders: number; units: number }> = {}
+                        analyticsDayData.entries.forEach(e => {
+                          if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0, units: 0 }
+                          byUser[e.user_id].orders += e.orders_count
+                          byUser[e.user_id].units += e.units_count
+                        })
+                        const rows = Object.values(byUser)
+                        if (rows.length === 0) return null
+                        const maxO = Math.max(...rows.map(u => u.orders), 1)
+                        const maxU = Math.max(...rows.map(u => u.units), 1)
+                        return (
+                          <div className="space-y-3">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
+                            {rows.map(u => (
                               <div key={u.user_id} className="border border-gray-100 rounded-xl p-3">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
                                   <div className="flex items-center gap-2">
-                                    {calcBonus(u.total_orders, bonusSettings) > 0 && (
+                                    {calcBonus(u.orders, bonusSettings) > 0 && (
                                       <span className="text-xs font-bold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
-                                        {calcBonus(u.total_orders, bonusSettings)} грн
+                                        {calcBonus(u.orders, bonusSettings)} грн
                                       </span>
                                     )}
-                                    <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
+                                    <span className="text-xs text-gray-400">{u.orders} замовл. · {u.units} од.</span>
                                   </div>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div>
                                     <div className="flex justify-between text-xs text-gray-400">
                                       <span>Замовлень/год</span>
-                                      <span className="font-semibold text-emerald-600">{u.orders_per_hour}</span>
+                                      <span className="font-semibold text-emerald-600">{(u.orders / 8).toFixed(1)}</span>
                                     </div>
-                                    <KpiBar value={u.orders_per_hour} max={maxO} color="#10b981" />
+                                    <KpiBar value={u.orders} max={maxO} color="#10b981" />
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-xs text-gray-400">
                                       <span>Одиниць/год</span>
-                                      <span className="font-semibold text-blue-600">{u.units_per_hour}</span>
+                                      <span className="font-semibold text-blue-600">{(u.units / 8).toFixed(1)}</span>
                                     </div>
-                                    <KpiBar value={u.units_per_hour} max={maxU} color="#3b82f6" />
+                                    <KpiBar value={u.units} max={maxU} color="#3b82f6" />
                                   </div>
                                 </div>
                               </div>
-                            )
-                          })}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </>
                   )}
                 </div>
 
-                {/* Bonus table — crm_admin / admin 1505, users with > 80 orders */}
-                {showBonusAsAdmin && analytics.by_user_today && analytics.by_user_today.length > 0 && (() => {
-                  const bonusRows = analytics.by_user_today.filter(u => u.total_orders >= 80)
+                {/* Bonus table — crm_admin / admin 1505, users with >= 80 orders */}
+                {showBonusAsAdmin && analyticsDayData && analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
+                  const byUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
+                  analyticsDayData.entries.forEach(e => {
+                    if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0 }
+                    byUser[e.user_id].orders += e.orders_count
+                  })
+                  const rows = Object.values(byUser)
+                  const bonusRows = rows.filter(u => u.orders >= 80)
                   if (bonusRows.length === 0) return (
                     <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                       <p className="text-sm font-semibold text-gray-700 mb-1">Бонуси співробітників</p>
                       <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
                     </div>
                   )
-                  const totalBonus = bonusRows.reduce((s, u) => s + calcBonus(u.total_orders, bonusSettings), 0)
+                  const totalBonus = rows.reduce((s, u) => s + calcBonus(u.orders, bonusSettings), 0)
                   return (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
@@ -600,22 +651,22 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         <span className="text-sm font-bold text-yellow-700">Всього: {totalBonus} грн</span>
                       </div>
                       <div className="space-y-2">
-                        {analytics.by_user_today.map(u => {
-                          const bonus = calcBonus(u.total_orders, bonusSettings)
+                        {rows.map(u => {
+                          const bonus = calcBonus(u.orders, bonusSettings)
                           return (
                             <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
                               <div>
                                 <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                <p className="text-xs text-gray-400">{u.total_orders} замовлень</p>
+                                <p className="text-xs text-gray-400">{u.orders} замовлень</p>
                               </div>
                               <div className="text-right">
                                 {bonus > 0 ? (
                                   <>
                                     <p className="text-base font-bold text-yellow-700">{bonus} грн</p>
                                     <p className="text-xs text-gray-400">
-                                      {u.total_orders <= 100
-                                        ? `(${u.total_orders}−80)×6`
-                                        : `(${u.total_orders}−80)×8`}
+                                      {u.orders <= 100
+                                        ? `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_mid}`
+                                        : `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_high}`}
                                     </p>
                                   </>
                                 ) : (
