@@ -497,6 +497,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           <span className="font-semibold text-gray-800">{e.units_count}</span>
                           <span className="text-gray-400 ml-1">од.</span>
                         </span>
+                        {calcBonus(e.orders_count, bonusSettings) > 0 && (
+                          <span className="font-semibold text-amber-600">
+                            {calcBonus(e.orders_count, bonusSettings)} грн
+                          </span>
+                        )}
                         <button
                           onClick={() => handleDelete(e.id)}
                           disabled={deleting === e.id}
