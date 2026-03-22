@@ -63,6 +63,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const [tab, setTab] = useState<Tab>('input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
+  const isCrm = user.role === 'crm'
 
   // Input form
   const [orders, setOrders] = useState('')
@@ -76,6 +77,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   // Data
   const [dayData, setDayData] = useState<CrmTodayData | null>(null)
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
+  const [recentEntries, setRecentEntries] = useState<import('../types').CrmEntry[]>([])
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
 
@@ -111,7 +113,20 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     }
   }, [user.id, isAdmin])
 
+  const fetchRecent = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc('get_crm_recent', {
+        p_user_id: user.id,
+        p_is_admin: isAdmin,
+        p_limit: 40,
+      })
+      if (data) setRecentEntries(data as import('../types').CrmEntry[])
+    } catch {/* ignore */}
+  }, [user.id, isAdmin])
+
   useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
+
+  useEffect(() => { fetchRecent() }, [fetchRecent])
 
   useEffect(() => {
     if (tab === 'analytics') fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
@@ -141,6 +156,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       setSubmitSuccess(true)
       setTimeout(() => setSubmitSuccess(false), 2500)
       fetchDay(selectedDate)
+      fetchRecent()
     } catch {
       setSubmitError('Помилка збереження. Спробуйте ще раз.')
     } finally {
@@ -155,6 +171,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     try {
       await supabase.rpc('delete_crm_entry', { p_id: id })
       fetchDay(selectedDate)
+      fetchRecent()
     } catch {/* ignore */} finally {
       setDeleting(null)
     }
@@ -208,19 +225,21 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
-          {(['input', 'analytics'] as Tab[]).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors
-                ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-            >
-              {t === 'input' ? 'Введення даних' : 'Аналітика'}
-            </button>
-          ))}
-        </div>
+        {/* Tabs — analytics hidden for crm role */}
+        {!isCrm && (
+          <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
+            {(['input', 'analytics'] as Tab[]).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors
+                  ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+              >
+                {t === 'input' ? 'Введення даних' : 'Аналітика'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── INPUT TAB ──────────────────────────────────────────────────────── */}
         {tab === 'input' && (
@@ -307,14 +326,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </button>
             </div>
 
-            {/* Entries log */}
-            {entries.length > 0 && (
+            {/* Last 40 entries */}
+            {recentEntries.length > 0 && (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                 <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Записи · {formatDisplayDate(selectedDate)}
+                  Останні записи
                 </p>
                 <div className="space-y-2">
-                  {entries.map(e => (
+                  {recentEntries.map(e => (
                     <div
                       key={e.id}
                       className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0"
