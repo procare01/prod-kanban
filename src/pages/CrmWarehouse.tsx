@@ -59,11 +59,11 @@ function KpiBar({ value, max, color }: { value: number; max: number; color: stri
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function CrmWarehouse({ user, onLogout }: Props) {
   const navigate = useNavigate()
-  const isAdmin = user.role === 'admin'
+  const isAdmin = user.role === 'admin' || user.role === 'crm_admin'
 
   const [tab, setTab] = useState<Tab>('input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
-  const isCrm = user.role === 'crm'
+  const isCrm = user.role === 'crm' // crm_admin sees analytics tab
 
   // Input form
   const [orders, setOrders] = useState('')
