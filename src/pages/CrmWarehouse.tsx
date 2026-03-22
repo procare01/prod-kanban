@@ -22,13 +22,13 @@ function formatDisplayDate(iso: string) {
 }
 
 // ─── Bonus calculation ────────────────────────────────────────────────────────
-// 0–80 orders  → 0 UAH
-// 81–100       → (orders − 80) × 6 UAH
-// 101+         → (orders − 80) × 8 UAH
-function calcBonus(orders: number): number {
-  if (orders <= 80) return 0
-  if (orders <= 100) return (orders - 80) * 6
-  return (orders - 80) * 8
+interface BonusSettings { threshold: number; rate_mid: number; rate_high: number }
+const DEFAULT_BONUS: BonusSettings = { threshold: 80, rate_mid: 6, rate_high: 8 }
+
+function calcBonus(orders: number, s: BonusSettings = DEFAULT_BONUS): number {
+  if (orders <= s.threshold) return 0
+  if (orders <= 100) return (orders - s.threshold) * s.rate_mid
+  return (orders - s.threshold) * s.rate_high
 }
 
 // ─── Mini bar chart ───────────────────────────────────────────────────────────
@@ -91,6 +91,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
   const [recentEntries, setRecentEntries] = useState<import('../types').CrmEntry[]>([])
   const [monthlyBonus, setMonthlyBonus] = useState<CrmMonthlyUserBonus[]>([])
+  const [bonusSettings, setBonusSettings] = useState<BonusSettings>(DEFAULT_BONUS)
+  const [editRateMid, setEditRateMid] = useState('')
+  const [editRateHigh, setEditRateHigh] = useState('')
+  const [savingRates, setSavingRates] = useState(false)
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
 
@@ -147,10 +151,22 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     } catch {/* ignore */}
   }, [user.id, isAdmin])
 
+  const fetchBonusSettings = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc('get_crm_bonus_settings')
+      if (data) {
+        setBonusSettings(data as BonusSettings)
+        setEditRateMid(String((data as BonusSettings).rate_mid))
+        setEditRateHigh(String((data as BonusSettings).rate_high))
+      }
+    } catch {/* ignore */}
+  }, [])
+
   useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
 
   useEffect(() => { fetchRecent() }, [fetchRecent])
   useEffect(() => { fetchMonthlyBonus() }, [fetchMonthlyBonus])
+  useEffect(() => { fetchBonusSettings() }, [fetchBonusSettings])
 
   useEffect(() => {
     if (tab === 'analytics') fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
@@ -312,8 +328,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {!loadingDay && (() => {
               // For crm role show own bonus; for admin/crm_admin show per-user breakdown
               if (!isAdmin) {
-                const bonus = calcBonus(totalOrders)
-                if (bonus === 0 && totalOrders <= 80) return null
+                const bonus = calcBonus(totalOrders, bonusSettings)
+                if (bonus === 0 && totalOrders <= bonusSettings.threshold) return null
                 return (
                   <div className={`rounded-2xl p-4 shadow-sm border ${bonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
                     <div className="flex items-center justify-between">
@@ -350,7 +366,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <p className="text-sm font-semibold text-gray-700 mb-3">Бонуси за день</p>
                   <div className="space-y-2">
                     {rows.map(u => {
-                      const bonus = calcBonus(u.orders)
+                      const bonus = calcBonus(u.orders, bonusSettings)
                       return (
                         <div key={u.name} className="flex items-center justify-between text-sm">
                           <div>
@@ -533,9 +549,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
                                   <div className="flex items-center gap-2">
-                                    {calcBonus(u.total_orders) > 0 && (
+                                    {calcBonus(u.total_orders, bonusSettings) > 0 && (
                                       <span className="text-xs font-bold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">
-                                        {calcBonus(u.total_orders)} грн
+                                        {calcBonus(u.total_orders, bonusSettings)} грн
                                       </span>
                                     )}
                                     <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
@@ -575,7 +591,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <p className="text-sm text-gray-400">Поки ніхто не перевищив 80 замовлень</p>
                     </div>
                   )
-                  const totalBonus = bonusRows.reduce((s, u) => s + calcBonus(u.total_orders), 0)
+                  const totalBonus = bonusRows.reduce((s, u) => s + calcBonus(u.total_orders, bonusSettings), 0)
                   return (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
@@ -584,7 +600,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       </div>
                       <div className="space-y-2">
                         {analytics.by_user_today.map(u => {
-                          const bonus = calcBonus(u.total_orders)
+                          const bonus = calcBonus(u.total_orders, bonusSettings)
                           return (
                             <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
                               <div>
@@ -700,6 +716,66 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   </div>
                 )}
               </>
+            )}
+
+            {/* Bonus rate settings — admin 1505 / crm_admin */}
+            {showBonusAsAdmin && (
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Налаштування ставок бонусу</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1 block">
+                      Ставка за 1 замовлення (81–100)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={editRateMid}
+                        onChange={e => setEditRateMid(e.target.value.replace(/\D/g, ''))}
+                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      />
+                      <span className="text-sm text-gray-400">грн</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1 block">
+                      Ставка за 1 замовлення (101+)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={editRateHigh}
+                        onChange={e => setEditRateHigh(e.target.value.replace(/\D/g, ''))}
+                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      />
+                      <span className="text-sm text-gray-400">грн</span>
+                    </div>
+                  </div>
+                  <button
+                    disabled={savingRates}
+                    onClick={async () => {
+                      const mid = parseInt(editRateMid, 10)
+                      const high = parseInt(editRateHigh, 10)
+                      if (isNaN(mid) || isNaN(high) || mid < 0 || high < 0) return
+                      setSavingRates(true)
+                      try {
+                        await supabase.rpc('set_crm_bonus_settings', { p_rate_mid: mid, p_rate_high: high })
+                        await fetchBonusSettings()
+                        await fetchMonthlyBonus()
+                      } catch {/* ignore */} finally {
+                        setSavingRates(false)
+                      }
+                    }}
+                    className="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-medium disabled:opacity-50"
+                  >
+                    {savingRates ? 'Збереження…' : 'Зберегти ставки'}
+                  </button>
+                </div>
+              </div>
             )}
           </>
         )}
