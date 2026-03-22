@@ -73,6 +73,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const isCrmAdmin = user.role === 'crm_admin'
   const isCrm = user.role === 'crm'
+  const showBonusAsAdmin = user.role === 'crm_admin' || (user.role === 'admin' && user.pin === '1505')
   const [tab, setTab] = useState<Tab>(isCrmAdmin ? 'analytics' : 'input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
 
@@ -565,8 +566,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )}
                 </div>
 
-                {/* Bonus table — crm_admin only, users with > 80 orders */}
-                {isCrmAdmin && analytics.by_user_today && analytics.by_user_today.length > 0 && (() => {
+                {/* Bonus table — crm_admin / admin 1505, users with > 80 orders */}
+                {showBonusAsAdmin && analytics.by_user_today && analytics.by_user_today.length > 0 && (() => {
                   const bonusRows = analytics.by_user_today.filter(u => u.total_orders > 80)
                   if (bonusRows.length === 0) return (
                     <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -672,7 +673,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-sm font-semibold text-gray-700">Бонуси за місяць</p>
-                      {isCrmAdmin && (
+                      {showBonusAsAdmin && (
                         <span className="text-sm font-bold text-yellow-700">
                           Всього: {monthlyBonus.reduce((s, u) => s + u.total_bonus, 0)} грн
                         </span>
@@ -682,7 +683,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       {monthlyBonus.map(u => (
                         <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
                           <div>
-                            {isCrmAdmin && <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>}
+                            {showBonusAsAdmin && <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>}
                             <p className="text-xs text-gray-400">
                               {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
                             </p>
