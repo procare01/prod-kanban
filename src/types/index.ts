@@ -108,6 +108,14 @@ export interface CrmDailyPoint {
   units: number
 }
 
+export interface CrmMonthlyUserBonus {
+  user_id: string
+  user_name: string
+  total_orders: number
+  total_bonus: number
+  days_active: number
+}
+
 export interface CrmAnalytics {
   daily: CrmDailyPoint[]
   by_user_today: CrmUserKpi[]

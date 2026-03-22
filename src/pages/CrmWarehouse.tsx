@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import type { User, CrmTodayData, CrmAnalytics, CrmDailyPoint } from '../types'
+import type { User, CrmTodayData, CrmAnalytics, CrmDailyPoint, CrmMonthlyUserBonus } from '../types'
 
 interface Props {
   user: User
@@ -89,6 +89,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [dayData, setDayData] = useState<CrmTodayData | null>(null)
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
   const [recentEntries, setRecentEntries] = useState<import('../types').CrmEntry[]>([])
+  const [monthlyBonus, setMonthlyBonus] = useState<CrmMonthlyUserBonus[]>([])
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
 
@@ -124,6 +125,16 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     }
   }, [user.id, isAdmin])
 
+  const fetchMonthlyBonus = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc('get_crm_monthly_bonus', {
+        p_user_id: user.id,
+        p_is_admin: isAdmin,
+      })
+      if (data) setMonthlyBonus(data as CrmMonthlyUserBonus[])
+    } catch {/* ignore */}
+  }, [user.id, isAdmin])
+
   const fetchRecent = useCallback(async () => {
     try {
       const { data } = await supabase.rpc('get_crm_recent', {
@@ -138,6 +149,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
 
   useEffect(() => { fetchRecent() }, [fetchRecent])
+  useEffect(() => { fetchMonthlyBonus() }, [fetchMonthlyBonus])
 
   useEffect(() => {
     if (tab === 'analytics') fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
@@ -168,6 +180,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       setTimeout(() => setSubmitSuccess(false), 2500)
       fetchDay(selectedDate)
       fetchRecent()
+      fetchMonthlyBonus()
     } catch {
       setSubmitError('Помилка збереження. Спробуйте ще раз.')
     } finally {
@@ -183,6 +196,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       await supabase.rpc('delete_crm_entry', { p_id: id })
       fetchDay(selectedDate)
       fetchRecent()
+      fetchMonthlyBonus()
     } catch {/* ignore */} finally {
       setDeleting(null)
     }
@@ -396,6 +410,23 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 {submitting ? 'Збереження...' : `Зберегти за ${formatDisplayDate(selectedDate)}`}
               </button>
             </div>
+
+            {/* Monthly bonus for crm user (own) */}
+            {isCrm && monthlyBonus.length > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Мій бонус за місяць</p>
+                {monthlyBonus.map(u => (
+                  <div key={u.user_id} className="flex items-center justify-between">
+                    <p className="text-xs text-gray-400">
+                      {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
+                    </p>
+                    <p className={`text-2xl font-bold ${u.total_bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
+                      {u.total_bonus} грн
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Last 40 entries */}
             {recentEntries.length > 0 && (
@@ -632,6 +663,38 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
                         <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Monthly bonus — crm_admin sees all users, crm sees own */}
+                {monthlyBonus.length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-gray-700">Бонуси за місяць</p>
+                      {isCrmAdmin && (
+                        <span className="text-sm font-bold text-yellow-700">
+                          Всього: {monthlyBonus.reduce((s, u) => s + u.total_bonus, 0)} грн
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {monthlyBonus.map(u => (
+                        <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
+                          <div>
+                            {isCrmAdmin && <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>}
+                            <p className="text-xs text-gray-400">
+                              {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-base font-bold ${u.total_bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
+                              {u.total_bonus > 0 ? `${u.total_bonus} грн` : '0 грн'}
+                            </p>
+                            <p className="text-xs text-gray-400">бонус</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
