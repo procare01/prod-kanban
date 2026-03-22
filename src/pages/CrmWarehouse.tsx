@@ -706,6 +706,23 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )
                 })()}
 
+                {/* Monthly totals */}
+                {analytics.monthly && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">замовлень</p>
+                      </div>
+                      <div className="bg-blue-50 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Chart: orders */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-3">
@@ -743,23 +760,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
                   )}
                 </div>
-
-                {/* Monthly totals */}
-                {analytics.monthly && (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">замовлень</p>
-                      </div>
-                      <div className="bg-blue-50 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Monthly bonus — crm_admin sees all users, crm sees own */}
                 {monthlyBonus.length > 0 && (
