@@ -455,7 +455,19 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {/* Monthly bonus for crm user (own) */}
             {isCrm && monthlyBonus.length > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Мій бонус за місяць</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  Мій бонус за місяць
+                  <span className="text-xs font-normal text-gray-400 ml-2">
+                    {(() => {
+                      const now = new Date()
+                      const y = now.getFullYear()
+                      const m = now.getMonth()
+                      const last = new Date(y, m + 1, 0).getDate()
+                      const mm = String(m + 1).padStart(2, '0')
+                      return `з 01.${mm} по ${String(last).padStart(2,'0')}.${mm}`
+                    })()}
+                  </span>
+                </p>
                 {monthlyBonus.map(u => (
                   <div key={u.user_id} className="flex items-center justify-between">
                     <p className="text-xs text-gray-400">
