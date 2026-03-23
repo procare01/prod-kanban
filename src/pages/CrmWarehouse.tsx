@@ -765,8 +765,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )
                 })()}
 
-                {/* Monthly bonus — crm_admin sees all users, crm sees own */}
-                {monthlyBonus.length > 0 && (
+                {/* Monthly bonus — crm_admin sees all users, crm sees own, ceo hidden */}
+                {monthlyBonus.length > 0 && !isCeo && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-sm font-semibold text-gray-700">Бонуси за місяць</p>
