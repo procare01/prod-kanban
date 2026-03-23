@@ -208,8 +208,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     setSubmitting(true)
     setSubmitError('')
     try {
-      // Build timestamp at noon on selected date so timezone shifts don't flip the day
-      const ts = `${selectedDate}T12:00:00Z`
+      // For today — use real current time; for past dates — use noon Kyiv (10:00 UTC) to anchor to that date
+      const todayStr = toDateInputValue(new Date())
+      const ts = selectedDate === todayStr
+        ? new Date().toISOString()
+        : `${selectedDate}T10:00:00Z`
       await supabase.rpc('submit_crm_entry', {
         p_user_id: user.id,
         p_orders: o,
