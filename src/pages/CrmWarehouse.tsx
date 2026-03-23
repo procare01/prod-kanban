@@ -44,15 +44,28 @@ function MiniBarChart({ data, color, label }: {
   const W = 320
   const H = 80
   const barW = Math.floor((W - (data.length - 1) * 2) / data.length)
-  const fill = color === 'emerald' ? '#10b981' : '#3b82f6'
+  const gradId = color === 'emerald' ? 'barGradEmerald' : 'barGradBlue'
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none">
+      <defs>
+        {color === 'emerald' ? (
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#86efac" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#14532d" stopOpacity="0.95" />
+          </linearGradient>
+        ) : (
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#3b0764" stopOpacity="0.95" />
+          </linearGradient>
+        )}
+      </defs>
       {data.map((d, i) => {
         const v = label === 'orders' ? d.orders : d.units
         const bh = Math.max((v / max) * (H - 4), v > 0 ? 4 : 0)
         const x = i * (barW + 2)
-        return <rect key={i} x={x} y={H - bh} width={barW} height={bh} rx={2} fill={fill} opacity={0.8} />
+        return <rect key={i} x={x} y={H - bh} width={barW} height={bh} rx={2} fill={`url(#${gradId})`} />
       })}
     </svg>
   )
@@ -61,9 +74,12 @@ function MiniBarChart({ data, color, label }: {
 // ─── KPI bar ──────────────────────────────────────────────────────────────────
 function KpiBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
+  const gradient = color === '#10b981'
+    ? 'linear-gradient(90deg, #86efac 0%, #16a34a 40%, #14532d 100%)'
+    : 'linear-gradient(90deg, #bfdbfe 0%, #6d28d9 40%, #3b0764 100%)'
   return (
     <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
-      <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: gradient }} />
     </div>
   )
 }
@@ -299,13 +315,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
         {/* Tabs: crm — input only; crm_admin/ceo — analytics only; super_admin/admin — both (analytics first for super_admin) */}
         {!isCrm && !isCrmAdmin && !isCeo && (
-          <div className="flex rounded-3xl p-1 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 gap-1">
+          <div className="flex gap-2">
             {(isSuperAdmin ? ['analytics', 'input'] : ['input', 'analytics'] as Tab[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t as Tab)}
-                className={`flex-1 py-2 rounded-2xl text-sm font-semibold transition-colors
-                  ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}
+                className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-[0.98]
+                  backdrop-blur-md shadow-sm
+                  ${tab === t
+                    ? 'bg-gradient-to-br from-blue-50 to-white border-2 border-blue-400 text-blue-700 shadow-md'
+                    : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
+                  }`}
               >
                 {t === 'input' ? 'Введення даних' : 'Аналітика'}
               </button>
@@ -550,13 +570,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {/* ── ANALYTICS TAB ──────────────────────────────────────────────────── */}
         {tab === 'analytics' && (
           <>
-            <div className="flex rounded-3xl p-1 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 gap-1">
+            <div className="flex gap-2">
               {(['7d', '30d'] as ChartPeriod[]).map(p => (
                 <button
                   key={p}
                   onClick={() => setChartPeriod(p)}
-                  className={`flex-1 py-1.5 rounded-2xl text-xs font-semibold transition-colors
-                    ${chartPeriod === p ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`flex-1 py-3 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-[0.98]
+                    backdrop-blur-md border shadow-sm
+                    ${chartPeriod === p
+                      ? 'bg-gradient-to-br from-sky-100/80 via-cyan-50/60 to-white/50 border-2 border-blue-400 text-blue-700 shadow-md'
+                      : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
+                    }`}
                 >
                   {p === '7d' ? '7 днів' : '1 місяць'}
                 </button>
@@ -582,14 +606,34 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">минуле</span>
                       )}
                     </div>
-                    <input
-                      type="date"
-                      value={analyticsDate}
-                      max={toDateInputValue(new Date())}
-                      onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
-                      className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
-                                 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                    />
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          const d = new Date(analyticsDate)
+                          d.setDate(d.getDate() - 1)
+                          setAnalyticsDate(toDateInputValue(d))
+                        }}
+                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      >‹</button>
+                      <input
+                        type="date"
+                        value={analyticsDate}
+                        max={toDateInputValue(new Date())}
+                        onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
+                        className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
+                                   focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      />
+                      <button
+                        onClick={() => {
+                          const d = new Date(analyticsDate)
+                          d.setDate(d.getDate() + 1)
+                          const next = toDateInputValue(d)
+                          if (next <= toDateInputValue(new Date())) setAnalyticsDate(next)
+                        }}
+                        disabled={isAnalyticsToday}
+                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >›</button>
+                    </div>
                   </div>
                   {analyticsDayData && (
                     <>

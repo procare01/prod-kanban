@@ -124,16 +124,22 @@ export function Board({ user, onLogout }: Props) {
         {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
           <button
             onClick={() => navigate('/analytics')}
-            className="w-full flex items-center justify-between bg-indigo-50 border border-indigo-100
-                       rounded-2xl px-4 py-3 hover:bg-indigo-100 active:bg-indigo-200 transition-colors"
+            className="w-full flex items-center justify-between
+                       bg-gradient-to-br from-sky-100/70 to-white/50
+                       backdrop-blur-md border border-white/70
+                       rounded-2xl px-5 py-3.5 shadow-sm
+                       hover:from-sky-200/70 hover:to-white/60
+                       active:scale-[0.98] transition-all duration-200"
           >
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="text-sm font-semibold text-indigo-700">Аналітика</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                <svg className="w-4 h-4 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <span className="text-sm font-bold text-gray-800">Аналітика</span>
             </div>
-            <span className="text-indigo-400">›</span>
+            <span className="text-gray-400 text-lg">›</span>
           </button>
         )}
 
@@ -141,18 +147,22 @@ export function Board({ user, onLogout }: Props) {
         {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
           <button
             onClick={() => navigate('/data-analytics')}
-            className="w-full flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100
-                       rounded-2xl px-4 py-3 hover:from-indigo-100 hover:to-purple-100 active:from-indigo-200 active:to-purple-200 transition-all"
+            className="w-full flex items-center justify-between
+                       bg-gradient-to-br from-violet-100/70 to-white/50
+                       backdrop-blur-md border border-white/70
+                       rounded-2xl px-5 py-3.5 shadow-sm
+                       hover:from-violet-200/70 hover:to-white/60
+                       active:scale-[0.98] transition-all duration-200"
           >
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
               </div>
-              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">Дашборд</span>
+              <span className="text-sm font-bold text-gray-800">Дашборд</span>
             </div>
-            <span className="text-purple-400">›</span>
+            <span className="text-gray-400 text-lg">›</span>
           </button>
         )}
 
