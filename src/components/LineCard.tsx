@@ -60,7 +60,7 @@ export function LineCard({ line, statuses, user, onChangeStatus }: Props) {
 
   const { history, loading: histLoading, fetch: fetchHistory, deleteEntry, clearHistory } = useLineHistory(line.id)
 
-  const canChange = user.role === 'brigadir' || user.role === 'controller' || user.role === 'admin'
+  const canChange = user.role === 'brigadir' || user.role === 'controller' || user.role === 'admin' || user.role === 'super_admin'
   const isAdmin = user.role === 'admin'
 
   const handleStatusClick = useCallback((status: TaskStatus) => {
