@@ -101,22 +101,53 @@ export function Board({ user, onLogout }: Props) {
         {/* User card */}
         <UserCard user={user} />
 
+        {/* CRM Warehouse (crm role OR super_admin/ceo OR admin with PIN 1505/7985) */}
+        {(user.role === 'crm' || user.role === 'super_admin' || user.role === 'ceo' ||
+          (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))) && (
+          <button
+            onClick={() => navigate('/crm')}
+            className="w-full flex items-center justify-between
+                       bg-gradient-to-br from-emerald-50 to-white
+                       backdrop-blur-md border-2 border-emerald-300/70
+                       rounded-2xl px-5 py-3.5 shadow-sm
+                       hover:border-emerald-400/80 hover:from-emerald-100/80
+                       active:scale-[0.98] transition-all duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <span className="text-sm font-bold text-gray-800">Склад CRM</span>
+            </div>
+            <span className="text-gray-400 text-lg">›</span>
+          </button>
+        )}
+
         {/* Admin link — hidden for ceo */}
         {(user.role === 'admin' || user.role === 'super_admin') && (
           <button
             onClick={() => navigate('/admin')}
-            className="w-full flex items-center justify-between bg-purple-50 border border-purple-100
-                       rounded-2xl px-4 py-3 hover:bg-purple-100 active:bg-purple-200 transition-colors"
+            className="w-full flex items-center justify-between
+                       bg-gradient-to-br from-purple-50 to-white
+                       backdrop-blur-md border-2 border-purple-300/70
+                       rounded-2xl px-5 py-3.5 shadow-sm
+                       hover:border-purple-400/80 hover:from-purple-100/80
+                       active:scale-[0.98] transition-all duration-200"
           >
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-sm font-semibold text-purple-700">Адмін-панель</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span className="text-sm font-bold text-gray-800">Адмін-панель</span>
             </div>
-            <span className="text-purple-400">›</span>
+            <span className="text-gray-400 text-lg">›</span>
           </button>
         )}
 
@@ -125,10 +156,10 @@ export function Board({ user, onLogout }: Props) {
           <button
             onClick={() => navigate('/analytics')}
             className="w-full flex items-center justify-between
-                       bg-gradient-to-br from-sky-100/70 to-white/50
-                       backdrop-blur-md border border-white/70
+                       bg-gradient-to-br from-sky-50 to-white
+                       backdrop-blur-md border-2 border-sky-300/70
                        rounded-2xl px-5 py-3.5 shadow-sm
-                       hover:from-sky-200/70 hover:to-white/60
+                       hover:border-sky-400/80 hover:from-sky-100/80
                        active:scale-[0.98] transition-all duration-200"
           >
             <div className="flex items-center gap-3">
@@ -148,10 +179,10 @@ export function Board({ user, onLogout }: Props) {
           <button
             onClick={() => navigate('/data-analytics')}
             className="w-full flex items-center justify-between
-                       bg-gradient-to-br from-violet-100/70 to-white/50
-                       backdrop-blur-md border border-white/70
+                       bg-gradient-to-br from-violet-50 to-white
+                       backdrop-blur-md border-2 border-violet-300/70
                        rounded-2xl px-5 py-3.5 shadow-sm
-                       hover:from-violet-200/70 hover:to-white/60
+                       hover:border-violet-400/80 hover:from-violet-100/80
                        active:scale-[0.98] transition-all duration-200"
           >
             <div className="flex items-center gap-3">
@@ -163,25 +194,6 @@ export function Board({ user, onLogout }: Props) {
               <span className="text-sm font-bold text-gray-800">Дашборд</span>
             </div>
             <span className="text-gray-400 text-lg">›</span>
-          </button>
-        )}
-
-        {/* CRM Warehouse (crm role OR super_admin/ceo OR admin with PIN 1505/7985) */}
-        {(user.role === 'crm' || user.role === 'super_admin' || user.role === 'ceo' ||
-          (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))) && (
-          <button
-            onClick={() => navigate('/crm')}
-            className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-100
-                       rounded-2xl px-4 py-3 hover:bg-emerald-100 active:bg-emerald-200 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <span className="text-sm font-semibold text-emerald-700">Склад CRM</span>
-            </div>
-            <span className="text-emerald-400">›</span>
           </button>
         )}
 
