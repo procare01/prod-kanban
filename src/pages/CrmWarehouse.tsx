@@ -594,15 +594,15 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   {analyticsDayData && (
                     <>
                       <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
-                          <p className="text-xs text-gray-400 mb-0.5">Замовлень/год</p>
-                          <p className="text-lg font-bold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
-                          <p className="text-xs text-gray-400">Всього: {analyticsDayData.total_orders}</p>
+                        <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                          <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
+                          <p className="text-3xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
+                          <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_orders}</p>
                         </div>
-                        <div className="rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
-                          <p className="text-xs text-gray-400 mb-0.5">Одиниць/год</p>
-                          <p className="text-lg font-bold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
-                          <p className="text-xs text-gray-400">Всього: {analyticsDayData.total_units}</p>
+                        <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                          <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
+                          <p className="text-3xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
+                          <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_units}</p>
                         </div>
                       </div>
                       {analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
