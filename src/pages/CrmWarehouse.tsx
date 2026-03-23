@@ -514,19 +514,21 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           <span className="text-xs text-gray-400 ml-1">од.</span>
                         </div>
 
-                        {/* Delete */}
-                        <button
-                          onClick={() => handleDelete(e.id)}
-                          disabled={deleting === e.id}
-                          className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 ml-1 flex-shrink-0"
-                        >
-                          {deleting === e.id
-                            ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
-                            : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                          }
-                        </button>
+                        {/* Delete — hidden for crm role */}
+                        {!isCrm && (
+                          <button
+                            onClick={() => handleDelete(e.id)}
+                            disabled={deleting === e.id}
+                            className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 ml-1 flex-shrink-0"
+                          >
+                            {deleting === e.id
+                              ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
+                              : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            }
+                          </button>
+                        )}
                       </div>
                     )
                   })}
