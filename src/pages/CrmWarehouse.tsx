@@ -263,11 +263,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const totalUnits  = entries.reduce((s, e) => s + e.units_count, 0)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen pb-8" style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
       <div className="max-w-screen-sm mx-auto px-3 pt-3 space-y-3">
 
         {/* Header */}
-        <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 flex items-center justify-between">
+        <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 mr-1">
@@ -297,13 +297,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
         {/* Tabs: crm sees only input, crm_admin/ceo see only analytics, admin sees both */}
         {!isCrm && !isCrmAdmin && !isCeo && (
-          <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
+          <div className="flex rounded-3xl p-1 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 gap-1">
             {(['input', 'analytics'] as Tab[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors
-                  ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                className={`flex-1 py-2 rounded-2xl text-sm font-semibold transition-colors
+                  ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}
               >
                 {t === 'input' ? 'Введення даних' : 'Аналітика'}
               </button>
@@ -315,7 +315,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {tab === 'input' && (
           <>
             {/* Date picker */}
-            <div className="bg-white rounded-2xl px-4 py-3 shadow-sm border border-gray-100 flex items-center justify-between">
+            <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -342,11 +342,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Quick stats */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/80 via-white/80 to-teal-50/60">
                 <p className="text-xs text-gray-400 mb-1">{isToday ? 'Замовлень сьогодні' : 'Замовлень за день'}</p>
                 <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalOrders}</p>
               </div>
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-blue-50/80 via-white/80 to-indigo-50/60">
                 <p className="text-xs text-gray-400 mb-1">Одиниць товару</p>
                 <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalUnits}</p>
               </div>
@@ -436,7 +436,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             })()}
 
             {/* Input form */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-4">
+            <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
               <p className="text-sm font-semibold text-gray-700">Додати запис</p>
               <div className="space-y-3">
                 <div>
@@ -482,7 +482,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Last 40 entries */}
             {recentEntries.length > 0 && (
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Останні записи</p>
                 <div className="space-y-1.5">
                   {recentEntries.map(e => {
@@ -492,7 +492,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       timeZone: 'Europe/Kyiv'
                     })
                     return (
-                      <div key={e.id} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
+                      <div key={e.id} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white rounded-2xl px-3 py-2.5">
                         {/* Left: name + date */}
                         <div className="flex-1 min-w-0">
                           {isAdmin && (
@@ -548,12 +548,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {/* ── ANALYTICS TAB ──────────────────────────────────────────────────── */}
         {tab === 'analytics' && (
           <>
-            <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
+            <div className="flex rounded-3xl p-1 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 gap-1">
               {(['7d', '30d'] as ChartPeriod[]).map(p => (
                 <button
                   key={p}
                   onClick={() => setChartPeriod(p)}
-                  className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-colors
+                  className={`flex-1 py-1.5 rounded-2xl text-xs font-semibold transition-colors
                     ${chartPeriod === p ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   {p === '7d' ? '7 днів' : '1 місяць'}
@@ -570,7 +570,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {analytics && !loadingAnalytics && (
               <>
                 {/* KPI for selected day */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-gray-700">
@@ -592,12 +592,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   {analyticsDayData && (
                     <>
                       <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-emerald-50 rounded-xl p-3">
+                        <div className="rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
                           <p className="text-xs text-gray-400 mb-0.5">Замовлень/год</p>
                           <p className="text-lg font-bold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
                           <p className="text-xs text-gray-400">Всього: {analyticsDayData.total_orders}</p>
                         </div>
-                        <div className="bg-blue-50 rounded-xl p-3">
+                        <div className="rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
                           <p className="text-xs text-gray-400 mb-0.5">Одиниць/год</p>
                           <p className="text-lg font-bold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
                           <p className="text-xs text-gray-400">Всього: {analyticsDayData.total_units}</p>
@@ -619,7 +619,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           <div className="space-y-3">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                             {rows.map(u => (
-                              <div key={u.user_id} className="border border-gray-100 rounded-xl p-3">
+                              <div key={u.user_id} className="rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
                                   <div className="flex items-center gap-2">
@@ -645,7 +645,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                               </div>
                             ))}
                             {/* Total row */}
-                            <div className="border-t-2 border-gray-200 mt-2 pt-3 flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                            <div className="mt-2 pt-3 flex items-center justify-between rounded-2xl px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/80">
                               <span className="text-base font-bold text-gray-600">Всього</span>
                               <div className="flex items-center gap-4">
                                 <span>
@@ -671,14 +671,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                 {/* Monthly totals */}
                 {analytics.monthly && (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                  <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                     <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                      <div className="rounded-2xl p-3 text-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
                         <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
                         <p className="text-xs text-gray-400 mt-0.5">замовлень</p>
                       </div>
-                      <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <div className="rounded-2xl p-3 text-center bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
                         <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
                         <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
                       </div>
@@ -687,7 +687,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 )}
 
                 {/* Chart: orders */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Замовлення</p>
                     <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
@@ -706,7 +706,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 </div>
 
                 {/* Chart: units */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-violet-50/90 via-white/80 to-indigo-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Одиниці товару</p>
                     <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
@@ -805,7 +805,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Bonus rate settings — admin 1505 / crm_admin */}
             {showBonusAsAdmin && (
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                 <p className="text-sm font-semibold text-gray-700 mb-3">Налаштування ставок бонусу</p>
                 <div className="space-y-3">
                   <div>
