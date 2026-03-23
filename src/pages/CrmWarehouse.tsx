@@ -76,11 +76,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const isCrmAdmin = user.role === 'crm_admin'
   const isCrm = user.role === 'crm'
   const isCeo = user.role === 'ceo'
-  const isAdminWithCrmAccess = user.role === 'super_admin' ||
+  const isSuperAdmin = user.role === 'super_admin'
+  const isAdminWithCrmAccess = isSuperAdmin ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
-  const [tab, setTab] = useState<Tab>((isCrmAdmin || isCeo) ? 'analytics' : 'input')
+  // super_admin: default analytics, but sees both tabs; crm_admin/ceo: analytics only
+  const [tab, setTab] = useState<Tab>((isCrmAdmin || isCeo || isSuperAdmin) ? 'analytics' : 'input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
 
   // Input form
@@ -295,13 +297,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* Tabs: crm sees only input, crm_admin/ceo see only analytics, admin sees both */}
+        {/* Tabs: crm — input only; crm_admin/ceo — analytics only; super_admin/admin — both (analytics first for super_admin) */}
         {!isCrm && !isCrmAdmin && !isCeo && (
           <div className="flex rounded-3xl p-1 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 gap-1">
-            {(['input', 'analytics'] as Tab[]).map(t => (
+            {(isSuperAdmin ? ['analytics', 'input'] : ['input', 'analytics'] as Tab[]).map(t => (
               <button
                 key={t}
-                onClick={() => setTab(t)}
+                onClick={() => setTab(t as Tab)}
                 className={`flex-1 py-2 rounded-2xl text-sm font-semibold transition-colors
                   ${tab === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-white/60'}`}
               >
