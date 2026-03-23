@@ -25,7 +25,7 @@ function AppInner() {
 
   // CRM users go directly to the warehouse page
   const isCrm = user.role === 'crm' || user.role === 'crm_admin'
-  const isAdmin = user.role === 'admin'
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo'
 
   return (
     <Routes>

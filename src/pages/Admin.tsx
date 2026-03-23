@@ -78,13 +78,19 @@ function UsersTab() {
     flash('Користувача додано')
   }
 
-  const ROLE_LABELS: Record<string, string> = { admin: 'Адмін', brigadir: 'Бригадир', controller: 'Контролер', crm: 'CRM', crm_admin: 'CRM Адмін' }
+  const ROLE_LABELS: Record<string, string> = {
+    admin: 'Адмін', brigadir: 'Бригадир', controller: 'Контролер',
+    crm: 'CRM', crm_admin: 'CRM Адмін',
+    super_admin: 'СуперАдмін', ceo: 'CEO',
+  }
   const ROLE_COLORS: Record<string, string> = {
     admin: 'bg-purple-100 text-purple-700',
     brigadir: 'bg-blue-100 text-blue-700',
     controller: 'bg-green-100 text-green-700',
     crm: 'bg-emerald-100 text-emerald-700',
     crm_admin: 'bg-teal-100 text-teal-700',
+    super_admin: 'bg-red-100 text-red-700',
+    ceo: 'bg-orange-100 text-orange-700',
   }
 
   return (
@@ -117,6 +123,7 @@ function UsersTab() {
             <option value="admin">Адміністратор</option>
             <option value="crm">CRM</option>
             <option value="crm_admin">CRM Адмін</option>
+            {/* super_admin і ceo — не відображаємо в dropdown для нових юзерів */}
           </select>
           <input
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono"
@@ -136,7 +143,7 @@ function UsersTab() {
         <p className="text-sm text-gray-400 text-center py-4">Завантаження...</p>
       ) : (
         <div className="space-y-2">
-          {users.map(u => (
+          {users.filter(u => u.role !== 'super_admin').map(u => (
             <div key={u.id} className="bg-white rounded-xl border border-gray-100 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
@@ -931,7 +938,7 @@ export function Admin({ user }: Props) {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('users')
 
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'ceo') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">Доступ заборонено</p>

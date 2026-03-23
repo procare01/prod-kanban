@@ -71,11 +71,12 @@ function KpiBar({ value, max, color }: { value: number; max: number; color: stri
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function CrmWarehouse({ user, onLogout }: Props) {
   const navigate = useNavigate()
-  const isAdmin = user.role === 'admin' || user.role === 'crm_admin'
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo' || user.role === 'crm_admin'
 
   const isCrmAdmin = user.role === 'crm_admin'
   const isCrm = user.role === 'crm'
-  const isAdminWithCrmAccess = user.role === 'admin' && (user.pin === '1505' || user.pin === '7985')
+  const isAdminWithCrmAccess = ['super_admin', 'ceo'].includes(user.role) ||
+    (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
   const [tab, setTab] = useState<Tab>(isCrmAdmin ? 'analytics' : 'input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')

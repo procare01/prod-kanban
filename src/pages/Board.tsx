@@ -29,7 +29,8 @@ export function Board({ user, onLogout }: Props) {
 
   // ── Work day end timer ───────────────────────────────────
   useEffect(() => {
-    if (user.role !== 'admin' || isDemoMode) return
+    const isAdminRole = user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo'
+    if (!isAdminRole || isDemoMode) return
 
     let dismissed = false
 
@@ -101,7 +102,7 @@ export function Board({ user, onLogout }: Props) {
         <UserCard user={user} />
 
         {/* Admin link */}
-        {user.role === 'admin' && (
+        {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
           <button
             onClick={() => navigate('/admin')}
             className="w-full flex items-center justify-between bg-purple-50 border border-purple-100
@@ -119,8 +120,8 @@ export function Board({ user, onLogout }: Props) {
           </button>
         )}
 
-        {/* Analytics link (admin only) */}
-        {user.role === 'admin' && (
+        {/* Analytics link */}
+        {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
           <button
             onClick={() => navigate('/analytics')}
             className="w-full flex items-center justify-between bg-indigo-50 border border-indigo-100
@@ -136,8 +137,8 @@ export function Board({ user, onLogout }: Props) {
           </button>
         )}
 
-        {/* Data Analytics dashboard (admin only) */}
-        {user.role === 'admin' && (
+        {/* Data Analytics dashboard */}
+        {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
           <button
             onClick={() => navigate('/data-analytics')}
             className="w-full flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100
@@ -155,8 +156,9 @@ export function Board({ user, onLogout }: Props) {
           </button>
         )}
 
-        {/* CRM Warehouse (crm role OR admin with PIN 1505/7985) */}
-        {(user.role === 'crm' || (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))) && (
+        {/* CRM Warehouse (crm role OR super_admin/ceo OR admin with PIN 1505/7985) */}
+        {(user.role === 'crm' || user.role === 'super_admin' || user.role === 'ceo' ||
+          (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))) && (
           <button
             onClick={() => navigate('/crm')}
             className="w-full flex items-center justify-between bg-emerald-50 border border-emerald-100
@@ -174,7 +176,7 @@ export function Board({ user, onLogout }: Props) {
         )}
 
         {/* Work day end banner (admin only) */}
-        {workEndBanner && user.role === 'admin' && (
+        {workEndBanner && (user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
           <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xl">🕐</span>
