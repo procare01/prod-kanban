@@ -362,7 +362,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               return (
                 <div className="grid grid-cols-2 gap-3">
                   {/* Day bonus */}
-                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-between min-h-[96px]
+                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-start min-h-[96px]
                     ${bonus > 0 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Бонус за день</p>
@@ -379,7 +379,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     </div>
                   </div>
                   {/* Monthly bonus */}
-                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-between min-h-[96px]
+                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-start min-h-[96px]
                     ${monthBonus > 0 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">За місяць</p>
