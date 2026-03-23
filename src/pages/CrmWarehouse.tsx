@@ -352,29 +352,37 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </div>
             </div>
 
-            {/* Bonus card — shown only if orders > 80 */}
-            {!loadingDay && (() => {
-              // For crm role show own bonus; for admin/crm_admin show per-user breakdown
-              if (!isAdmin) {
-                const bonus = calcBonus(totalOrders, bonusSettings)
-                if (bonus === 0 && totalOrders <= bonusSettings.threshold) return null
-                return (
-                  <div className={`rounded-2xl p-4 shadow-sm border ${bonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Бонус за день</p>
-                        <p className={`text-2xl font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
-                          {bonus > 0 ? `${bonus} грн` : '0 грн'}
-                        </p>
-                        {totalOrders < 80 && (
-                          <p className="text-xs text-gray-400 mt-0.5">Потрібно від 80 замовлень</p>
-                        )}
-                      </div>
-                      <span className="text-3xl">🏆</span>
-                    </div>
+            {/* Bonus row for crm: day bonus + monthly bonus side by side */}
+            {isCrm && !loadingDay && (() => {
+              const bonus = calcBonus(totalOrders, bonusSettings)
+              const monthBonus = monthlyBonus[0]?.total_bonus ?? 0
+              const now = new Date()
+              const mm = String(now.getMonth() + 1).padStart(2, '0')
+              const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`rounded-2xl p-3 shadow-sm border ${bonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+                    <p className="text-xs text-gray-500 mb-0.5">Бонус за день</p>
+                    <p className={`text-xl font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
+                      {bonus > 0 ? `${bonus} грн` : totalOrders < 80 ? '—' : '0 грн'}
+                    </p>
+                    {totalOrders < 80 && (
+                      <p className="text-xs text-gray-400 mt-0.5">від 80 замовл.</p>
+                    )}
                   </div>
-                )
-              }
+                  <div className={`rounded-2xl p-3 shadow-sm border ${monthBonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+                    <p className="text-xs text-gray-500 mb-0.5">Бонус за місяць</p>
+                    <p className={`text-xl font-bold ${monthBonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
+                      {monthBonus > 0 ? `${monthBonus} грн` : '—'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">01.{mm}–{String(last).padStart(2,'0')}.{mm}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Bonus card for admin/crm_admin — per-user breakdown */}
+            {!isCrm && !loadingDay && (() => {
               // Admin/crm_admin: per-user bonus table
               if (!dayData?.entries || dayData.entries.length === 0) return null
               // Group by user
@@ -452,34 +460,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </button>
             </div>
 
-            {/* Monthly bonus for crm user (own) */}
-            {isCrm && monthlyBonus.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Мій бонус за місяць
-                  <span className="text-xs font-normal text-gray-400 ml-2">
-                    {(() => {
-                      const now = new Date()
-                      const y = now.getFullYear()
-                      const m = now.getMonth()
-                      const last = new Date(y, m + 1, 0).getDate()
-                      const mm = String(m + 1).padStart(2, '0')
-                      return `з 01.${mm} по ${String(last).padStart(2,'0')}.${mm}`
-                    })()}
-                  </span>
-                </p>
-                {monthlyBonus.map(u => (
-                  <div key={u.user_id} className="flex items-center justify-between">
-                    <p className="text-xs text-gray-400">
-                      {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
-                    </p>
-                    <p className={`text-2xl font-bold ${u.total_bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
-                      {u.total_bonus} грн
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* Last 40 entries */}
             {recentEntries.length > 0 && (
