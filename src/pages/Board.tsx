@@ -101,8 +101,8 @@ export function Board({ user, onLogout }: Props) {
         {/* User card */}
         <UserCard user={user} />
 
-        {/* Admin link */}
-        {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo') && (
+        {/* Admin link — hidden for ceo */}
+        {(user.role === 'admin' || user.role === 'super_admin') && (
           <button
             onClick={() => navigate('/admin')}
             className="w-full flex items-center justify-between bg-purple-50 border border-purple-100

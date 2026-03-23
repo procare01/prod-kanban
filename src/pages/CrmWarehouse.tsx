@@ -75,10 +75,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const isCrmAdmin = user.role === 'crm_admin'
   const isCrm = user.role === 'crm'
-  const isAdminWithCrmAccess = ['super_admin', 'ceo'].includes(user.role) ||
+  const isCeo = user.role === 'ceo'
+  const isAdminWithCrmAccess = user.role === 'super_admin' ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
+  // ceo бачить аналітику але без бонусів і налаштувань
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
-  const [tab, setTab] = useState<Tab>(isCrmAdmin ? 'analytics' : 'input')
+  const [tab, setTab] = useState<Tab>((isCrmAdmin || isCeo) ? 'analytics' : 'input')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
 
   // Input form
@@ -290,8 +292,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* Tabs: crm sees only input, crm_admin sees only analytics, admin sees both */}
-        {!isCrm && !isCrmAdmin && (
+        {/* Tabs: crm sees only input, crm_admin/ceo see only analytics, admin sees both */}
+        {!isCrm && !isCrmAdmin && !isCeo && (
           <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 gap-1">
             {(['input', 'analytics'] as Tab[]).map(t => (
               <button
