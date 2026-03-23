@@ -366,13 +366,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         <p className={`text-2xl font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
                           {bonus > 0 ? `${bonus} грн` : '0 грн'}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {totalOrders < 80
-                            ? 'Потрібно від 80 замовлень'
-                            : totalOrders <= 100
-                              ? `(${totalOrders} − ${bonusSettings.threshold}) × ${bonusSettings.rate_mid} грн`
-                              : `(${totalOrders} − ${bonusSettings.threshold}) × ${bonusSettings.rate_high} грн`}
-                        </p>
+                        {totalOrders < 80 && (
+                          <p className="text-xs text-gray-400 mt-0.5">Потрібно від 80 замовлень</p>
+                        )}
                       </div>
                       <span className="text-3xl">🏆</span>
                     </div>
