@@ -750,24 +750,16 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         {rows.map(u => {
                           const bonus = calcBonus(u.orders, bonusSettings)
                           return (
-                            <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
+                            <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-3">
                               <div>
-                                <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                <p className="text-xs text-gray-400">{u.orders} замовлень</p>
+                                <p className="text-base font-semibold text-gray-700">{u.user_name}</p>
+                                <p className="text-sm text-gray-400">{u.orders} замовлень</p>
                               </div>
                               <div className="text-right">
-                                {bonus > 0 ? (
-                                  <>
-                                    <p className="text-base font-bold text-yellow-700">{bonus} грн</p>
-                                    <p className="text-xs text-gray-400">
-                                      {u.orders <= 100
-                                        ? `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_mid}`
-                                        : `(${u.orders}−${bonusSettings.threshold})×${bonusSettings.rate_high}`}
-                                    </p>
-                                  </>
-                                ) : (
-                                  <p className="text-sm text-gray-300">— грн</p>
-                                )}
+                                {bonus > 0
+                                  ? <p className="text-xl font-bold text-yellow-700">{bonus} грн</p>
+                                  : <p className="text-base text-gray-300">— грн</p>
+                                }
                               </div>
                             </div>
                           )
