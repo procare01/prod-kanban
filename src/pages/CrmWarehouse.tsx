@@ -360,22 +360,41 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               const mm = String(now.getMonth() + 1).padStart(2, '0')
               const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
               return (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className={`rounded-2xl p-3 shadow-sm border ${bonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
-                    <p className="text-xs text-gray-500 mb-0.5">Бонус за день</p>
-                    <p className={`text-xl font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
-                      {bonus > 0 ? `${bonus} грн` : totalOrders < 80 ? '—' : '0 грн'}
-                    </p>
-                    {totalOrders < 80 && (
-                      <p className="text-xs text-gray-400 mt-0.5">від 80 замовл.</p>
-                    )}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Day bonus */}
+                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-between min-h-[96px]
+                    ${bonus > 0 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Бонус за день</p>
+                      <span className="text-lg">🏆</span>
+                    </div>
+                    <div>
+                      <p className={`text-3xl font-extrabold leading-none ${bonus > 0 ? 'text-amber-600' : 'text-gray-300'}`}>
+                        {bonus > 0 ? `${bonus}` : '—'}
+                      </p>
+                      {bonus > 0
+                        ? <p className="text-sm font-semibold text-amber-500 mt-0.5">грн</p>
+                        : <p className="text-xs text-gray-400 mt-1">від 80 замовл.</p>
+                      }
+                    </div>
                   </div>
-                  <div className={`rounded-2xl p-3 shadow-sm border ${monthBonus > 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
-                    <p className="text-xs text-gray-500 mb-0.5">Бонус за місяць</p>
-                    <p className={`text-xl font-bold ${monthBonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
-                      {monthBonus > 0 ? `${monthBonus} грн` : '—'}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">01.{mm}–{String(last).padStart(2,'0')}.{mm}</p>
+                  {/* Monthly bonus */}
+                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-between min-h-[96px]
+                    ${monthBonus > 0 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">За місяць</p>
+                      <span className="text-lg">📅</span>
+                    </div>
+                    <div>
+                      <p className={`text-3xl font-extrabold leading-none ${monthBonus > 0 ? 'text-amber-600' : 'text-gray-300'}`}>
+                        {monthBonus > 0 ? `${monthBonus}` : '—'}
+                      </p>
+                      {monthBonus > 0
+                        ? <p className="text-sm font-semibold text-amber-500 mt-0.5">грн</p>
+                        : <p className="text-xs text-gray-400 mt-1">немає бонусів</p>
+                      }
+                      <p className="text-xs text-gray-300 mt-1">01.{mm}–{String(last).padStart(2,'0')}.{mm}</p>
+                    </div>
                   </div>
                 </div>
               )
