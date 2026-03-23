@@ -96,11 +96,7 @@ export function LineCard({ line, statuses, user, onChangeStatus }: Props) {
       return { ['--status-color' as string]: status.color }
     }
 
-    if (clickable) {
-      return { borderColor: status.color + '60', color: status.color }
-    }
-
-    return undefined
+    return { borderColor: status.color + '60', color: status.color + (clickable ? '' : '99') }
   }
 
   return (
@@ -159,7 +155,7 @@ export function LineCard({ line, statuses, user, onChangeStatus }: Props) {
                       ? 'status-glow-button'
                       : clickable
                         ? 'border px-4 py-2.5 bg-white hover:opacity-80 active:scale-95 cursor-pointer'
-                        : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'border px-4 py-2.5 bg-white cursor-default'
                     }
                   `}
                   style={getStatusButtonStyle(s, isActive, clickable)}
