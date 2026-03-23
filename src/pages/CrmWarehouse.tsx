@@ -734,31 +734,31 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   const rows = Object.values(byUser)
                   const bonusRows = rows.filter(u => u.orders >= 80)
                   if (bonusRows.length === 0) return (
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Бонуси співробітників</p>
+                    <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
+                      <p className="text-base font-bold text-gray-700 mb-1">Бонуси співробітників</p>
                       <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
                     </div>
                   )
                   const totalBonus = rows.reduce((s, u) => s + calcBonus(u.orders, bonusSettings), 0)
                   return (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
-                        <span className="text-sm font-bold text-yellow-700">Всього: {totalBonus} грн</span>
+                    <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-base font-bold text-gray-700">Бонуси співробітників</p>
+                        <span className="text-base font-extrabold text-amber-600">Всього: {totalBonus} грн</span>
                       </div>
                       <div className="space-y-2">
                         {rows.map(u => {
                           const bonus = calcBonus(u.orders, bonusSettings)
                           return (
-                            <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-3">
+                            <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
                               <div>
-                                <p className="text-base font-semibold text-gray-700">{u.user_name}</p>
+                                <p className="text-base font-semibold text-gray-800">{u.user_name}</p>
                                 <p className="text-sm text-gray-400">{u.orders} замовлень</p>
                               </div>
                               <div className="text-right">
                                 {bonus > 0
-                                  ? <p className="text-xl font-bold text-yellow-700">{bonus} грн</p>
-                                  : <p className="text-base text-gray-300">— грн</p>
+                                  ? <p className="text-2xl font-extrabold text-amber-600">{bonus} <span className="text-base font-semibold text-amber-400">грн</span></p>
+                                  : <p className="text-lg text-gray-300">—</p>
                                 }
                               </div>
                             </div>
@@ -771,29 +771,29 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                 {/* Monthly bonus — crm_admin sees all users, crm sees own, ceo hidden */}
                 {monthlyBonus.length > 0 && !isCeo && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-semibold text-gray-700">Бонуси за місяць</p>
+                  <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-base font-bold text-gray-700">Бонуси за місяць</p>
                       {showBonusAsAdmin && (
-                        <span className="text-sm font-bold text-yellow-700">
+                        <span className="text-base font-extrabold text-amber-600">
                           Всього: {monthlyBonus.reduce((s, u) => s + u.total_bonus, 0)} грн
                         </span>
                       )}
                     </div>
                     <div className="space-y-2">
                       {monthlyBonus.map(u => (
-                        <div key={u.user_id} className="flex items-center justify-between bg-white rounded-xl px-3 py-2.5">
+                        <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
                           <div>
-                            {showBonusAsAdmin && <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>}
-                            <p className="text-xs text-gray-400">
+                            {showBonusAsAdmin && <p className="text-base font-semibold text-gray-800">{u.user_name}</p>}
+                            <p className="text-sm text-gray-400">
                               {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className={`text-base font-bold ${u.total_bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
-                              {u.total_bonus > 0 ? `${u.total_bonus} грн` : '0 грн'}
-                            </p>
-                            <p className="text-xs text-gray-400">бонус</p>
+                            {u.total_bonus > 0
+                              ? <p className="text-2xl font-extrabold text-amber-600">{u.total_bonus} <span className="text-base font-semibold text-amber-400">грн</span></p>
+                              : <p className="text-lg text-gray-300">0 грн</p>
+                            }
                           </div>
                         </div>
                       ))}
