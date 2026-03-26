@@ -124,6 +124,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [editRateMid, setEditRateMid] = useState('')
   const [editRateHigh, setEditRateHigh] = useState('')
   const [savingRates, setSavingRates] = useState(false)
+  const [showBonusSettings, setShowBonusSettings] = useState(false)
+  const [showMonthlyBonus, setShowMonthlyBonus] = useState(false)
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
 
@@ -653,12 +655,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     return (
                       <>
                         <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
                             <p className="text-3xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
                             <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_orders}</p>
                           </div>
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
                             <p className="text-3xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
                             <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_units}</p>
@@ -716,12 +718,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     return (
                       <>
                         <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
                             <p className="text-3xl font-extrabold text-emerald-700">{(totalO / (days * 8)).toFixed(1)}</p>
                             <p className="text-sm text-gray-400 mt-1">Всього: {totalO}</p>
                           </div>
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
                             <p className="text-3xl font-extrabold text-blue-700">{(totalU / (days * 8)).toFixed(1)}</p>
                             <p className="text-sm text-gray-400 mt-1">Всього: {totalU}</p>
@@ -771,11 +773,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                     <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
                         <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
                         <p className="text-xs text-gray-400 mt-0.5">замовлень</p>
                       </div>
-                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
                         <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
                         <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
                       </div>
@@ -832,7 +834,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   const bonusRows = rows.filter(u => u.orders >= 80)
                   if (bonusRows.length === 0) return (
                     <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
-                      <p className="text-base font-bold text-gray-700 mb-1">Бонуси співробітників</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-amber-500">🎁</span>
+                        <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                      </div>
                       <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
                     </div>
                   )
@@ -840,8 +845,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   return (
                     <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
                       <div className="flex items-center justify-between mb-4">
-                        <p className="text-base font-bold text-gray-700">Бонуси співробітників</p>
-                        <span className="text-base font-extrabold text-amber-600">Всього: {totalBonus} грн</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-500">🎁</span>
+                          <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                        </div>
+                        <span className="text-sm font-extrabold text-amber-600">Всього: {totalBonus} грн</span>
                       </div>
                       <div className="space-y-2">
                         {rows.map(u => {
@@ -868,33 +876,51 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                 {/* Monthly bonus — crm_admin sees all users, crm sees own, ceo hidden */}
                 {monthlyBonus.length > 0 && !isCeo && (
-                  <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-base font-bold text-gray-700">Бонуси за місяць</p>
-                      {showBonusAsAdmin && (
-                        <span className="text-base font-extrabold text-amber-600">
-                          Всього: {monthlyBonus.reduce((s, u) => s + u.total_bonus, 0)} грн
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {monthlyBonus.map(u => (
-                        <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
-                          <div>
-                            {showBonusAsAdmin && <p className="text-base font-semibold text-gray-800">{u.user_name}</p>}
-                            <p className="text-sm text-gray-400">
-                              {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            {u.total_bonus > 0
-                              ? <p className="text-2xl font-extrabold text-amber-600">{u.total_bonus} <span className="text-base font-semibold text-amber-400">грн</span></p>
-                              : <p className="text-lg text-gray-300">0 грн</p>
-                            }
-                          </div>
+                  <div className="rounded-3xl shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm overflow-hidden">
+                    <button
+                      onClick={() => setShowMonthlyBonus(v => !v)}
+                      className="w-full flex items-center justify-between px-5 py-3.5 text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-500">📅</span>
+                        <p className="text-sm font-semibold text-gray-700">Бонуси за місяць</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {showBonusAsAdmin && (
+                          <span className="text-sm font-extrabold text-amber-600">
+                            {monthlyBonus.reduce((s, u) => s + u.total_bonus, 0)} грн
+                          </span>
+                        )}
+                        <svg
+                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showMonthlyBonus ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+                    {showMonthlyBonus && (
+                      <div className="px-5 pb-5 space-y-2 border-t border-white/60">
+                        <div className="pt-3 space-y-2">
+                          {monthlyBonus.map(u => (
+                            <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
+                              <div>
+                                {showBonusAsAdmin && <p className="text-base font-semibold text-gray-800">{u.user_name}</p>}
+                                <p className="text-sm text-gray-400">
+                                  {u.total_orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                {u.total_bonus > 0
+                                  ? <p className="text-2xl font-extrabold text-amber-600">{u.total_bonus} <span className="text-base font-semibold text-amber-400">грн</span></p>
+                                  : <p className="text-lg text-gray-300">0 грн</p>
+                                }
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -902,61 +928,77 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Bonus rate settings — admin 1505 / crm_admin */}
             {showBonusAsAdmin && (
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Налаштування ставок бонусу</p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      Ставка за 1 замовлення (80–100)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={editRateMid}
-                        onChange={e => setEditRateMid(e.target.value.replace(/\D/g, ''))}
-                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      />
-                      <span className="text-sm text-gray-400">грн</span>
-                    </div>
+              <div className="rounded-3xl shadow-md backdrop-blur-sm border border-white/80 bg-white/75 overflow-hidden">
+                <button
+                  onClick={() => setShowBonusSettings(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">⚙️</span>
+                    <p className="text-sm font-semibold text-gray-700">Налаштування ставок бонусу</p>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">
-                      Ставка за 1 замовлення (101+)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={editRateHigh}
-                        onChange={e => setEditRateHigh(e.target.value.replace(/\D/g, ''))}
-                        className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      />
-                      <span className="text-sm text-gray-400">грн</span>
-                    </div>
-                  </div>
-                  <button
-                    disabled={savingRates}
-                    onClick={async () => {
-                      const mid = parseInt(editRateMid, 10)
-                      const high = parseInt(editRateHigh, 10)
-                      if (isNaN(mid) || isNaN(high) || mid < 0 || high < 0) return
-                      setSavingRates(true)
-                      try {
-                        await supabase.rpc('set_crm_bonus_settings', { p_rate_mid: mid, p_rate_high: high })
-                        await fetchBonusSettings()
-                        await fetchMonthlyBonus()
-                      } catch {/* ignore */} finally {
-                        setSavingRates(false)
-                      }
-                    }}
-                    className="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-medium disabled:opacity-50"
+                  <svg
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showBonusSettings ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
-                    {savingRates ? 'Збереження…' : 'Зберегти ставки'}
-                  </button>
-                </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showBonusSettings && (
+                  <div className="px-4 pb-4 space-y-3 border-t border-gray-100/80">
+                    <div className="pt-3">
+                      <label className="text-xs text-gray-400 mb-1 block">
+                        Ставка за 1 замовлення (80–100)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={editRateMid}
+                          onChange={e => setEditRateMid(e.target.value.replace(/\D/g, ''))}
+                          className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        />
+                        <span className="text-sm text-gray-400">грн</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">
+                        Ставка за 1 замовлення (101+)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={editRateHigh}
+                          onChange={e => setEditRateHigh(e.target.value.replace(/\D/g, ''))}
+                          className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        />
+                        <span className="text-sm text-gray-400">грн</span>
+                      </div>
+                    </div>
+                    <button
+                      disabled={savingRates}
+                      onClick={async () => {
+                        const mid = parseInt(editRateMid, 10)
+                        const high = parseInt(editRateHigh, 10)
+                        if (isNaN(mid) || isNaN(high) || mid < 0 || high < 0) return
+                        setSavingRates(true)
+                        try {
+                          await supabase.rpc('set_crm_bonus_settings', { p_rate_mid: mid, p_rate_high: high })
+                          await fetchBonusSettings()
+                          await fetchMonthlyBonus()
+                        } catch {/* ignore */} finally {
+                          setSavingRates(false)
+                        }
+                      }}
+                      className="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-medium disabled:opacity-50"
+                    >
+                      {savingRates ? 'Збереження…' : 'Зберегти ставки'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>
