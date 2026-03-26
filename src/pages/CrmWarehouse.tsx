@@ -787,7 +787,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 {chartPeriod !== '1d' && <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Замовлення</p>
-                    <span className="text-xs text-gray-400">{chartPeriod === '1d' ? '1 день' : chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
+                    <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
                   </div>
                   {chartData.length > 0 ? (
                     <>
