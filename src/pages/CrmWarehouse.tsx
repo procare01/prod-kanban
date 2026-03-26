@@ -769,7 +769,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 </div>
 
                 {/* Monthly totals */}
-                {analytics.monthly && (
+                {analytics.monthly && chartPeriod === '30d' && (
                   <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                     <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
                     <div className="grid grid-cols-2 gap-3">
