@@ -9,7 +9,7 @@ interface Props {
 }
 
 type Tab = 'input' | 'analytics'
-type ChartPeriod = '7d' | '30d'
+type ChartPeriod = '1d' | '7d' | '30d'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toDateInputValue(d: Date) {
@@ -99,7 +99,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
   // super_admin: default analytics, but sees both tabs; crm_admin/ceo: analytics only
   const [tab, setTab] = useState<Tab>((isCrmAdmin || isCeo || isSuperAdmin) ? 'analytics' : 'input')
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d')
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1d')
 
   // Input form
   const [orders, setOrders] = useState('')
@@ -210,7 +210,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   useEffect(() => {
     if (tab === 'analytics') {
-      fetchAnalytics(chartPeriod === '7d' ? 7 : 30)
+      fetchAnalytics(chartPeriod === '1d' ? 1 : chartPeriod === '7d' ? 7 : 30)
       fetchAnalyticsDay(analyticsDate)
     }
   }, [tab, chartPeriod, fetchAnalytics, fetchAnalyticsDay, analyticsDate])
@@ -268,7 +268,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   // ── Derived ──────────────────────────────────────────────────────────────────
   const chartData = useMemo(() => {
     if (!analytics?.daily) return []
-    return analytics.daily.slice(-(chartPeriod === '7d' ? 7 : 30))
+    return analytics.daily.slice(-(chartPeriod === '1d' ? 1 : chartPeriod === '7d' ? 7 : 30))
   }, [analytics, chartPeriod])
 
   const entries = useMemo(() => {
@@ -571,7 +571,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {tab === 'analytics' && (
           <>
             <div className="flex gap-2">
-              {(['7d', '30d'] as ChartPeriod[]).map(p => (
+              {(['1d', '7d', '30d'] as ChartPeriod[]).map(p => (
                 <button
                   key={p}
                   onClick={() => setChartPeriod(p)}
@@ -582,7 +582,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
                     }`}
                 >
-                  {p === '7d' ? '7 днів' : '1 місяць'}
+                  {p === '1d' ? '1 день' : p === '7d' ? '7 днів' : '1 місяць'}
                 </button>
               ))}
             </div>
@@ -595,82 +595,83 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {analytics && !loadingAnalytics && (
               <>
-                {/* KPI for selected day */}
+                {/* KPI block — switches by chartPeriod */}
                 <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
+                  {/* Header */}
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-700">
-                        ККД за {isAnalyticsToday ? 'сьогодні' : formatDisplayDate(analyticsDate)}
-                      </p>
-                      {!isAnalyticsToday && (
-                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">минуле</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          const d = new Date(analyticsDate)
-                          d.setDate(d.getDate() - 1)
-                          setAnalyticsDate(toDateInputValue(d))
-                        }}
-                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                      >‹</button>
-                      <input
-                        type="date"
-                        value={analyticsDate}
-                        max={toDateInputValue(new Date())}
-                        onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
-                        className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
-                                   focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                      />
-                      <button
-                        onClick={() => {
-                          const d = new Date(analyticsDate)
-                          d.setDate(d.getDate() + 1)
-                          const next = toDateInputValue(d)
-                          if (next <= toDateInputValue(new Date())) setAnalyticsDate(next)
-                        }}
-                        disabled={isAnalyticsToday}
-                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                      >›</button>
-                    </div>
-                  </div>
-                  {analyticsDayData && (
-                    <>
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
-                          <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
-                          <p className="text-3xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
-                          <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_orders}</p>
-                        </div>
-                        <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
-                          <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
-                          <p className="text-3xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
-                          <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_units}</p>
-                        </div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {chartPeriod === '1d'
+                        ? `ККД за ${isAnalyticsToday ? 'сьогодні' : formatDisplayDate(analyticsDate)}`
+                        : chartPeriod === '7d' ? 'ККД за 7 днів' : 'ККД за 1 місяць'}
+                    </p>
+                    {chartPeriod === '1d' && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            const d = new Date(analyticsDate)
+                            d.setDate(d.getDate() - 1)
+                            setAnalyticsDate(toDateInputValue(d))
+                          }}
+                          className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        >‹</button>
+                        <input
+                          type="date"
+                          value={analyticsDate}
+                          max={toDateInputValue(new Date())}
+                          onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
+                          className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
+                                     focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                        />
+                        <button
+                          onClick={() => {
+                            const d = new Date(analyticsDate)
+                            d.setDate(d.getDate() + 1)
+                            const next = toDateInputValue(d)
+                            if (next <= toDateInputValue(new Date())) setAnalyticsDate(next)
+                          }}
+                          disabled={isAnalyticsToday}
+                          className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >›</button>
                       </div>
-                      {analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
-                        // Group entries by user for per-user KPI
-                        const byUser: Record<string, { user_id: string; user_name: string; orders: number; units: number }> = {}
-                        analyticsDayData.entries.forEach(e => {
-                          if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0, units: 0 }
-                          byUser[e.user_id].orders += e.orders_count
-                          byUser[e.user_id].units += e.units_count
-                        })
-                        const rows = Object.values(byUser)
-                        if (rows.length === 0) return null
-                        const maxO = Math.max(...rows.map(u => u.orders), 1)
-                        const maxU = Math.max(...rows.map(u => u.units), 1)
-                        return (
+                    )}
+                    {chartPeriod !== '1d' && !isAnalyticsToday && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">минуле</span>
+                    )}
+                  </div>
+
+                  {/* === 1 ДЕНЬ === */}
+                  {chartPeriod === '1d' && analyticsDayData && (() => {
+                    const byUser: Record<string, { user_id: string; user_name: string; orders: number; units: number }> = {}
+                    analyticsDayData.entries?.forEach(e => {
+                      if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0, units: 0 }
+                      byUser[e.user_id].orders += e.orders_count
+                      byUser[e.user_id].units += e.units_count
+                    })
+                    const rows = Object.values(byUser)
+                    const maxO = Math.max(...rows.map(u => u.orders), 1)
+                    const maxU = Math.max(...rows.map(u => u.units), 1)
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                            <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
+                            <p className="text-3xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
+                            <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_orders}</p>
+                          </div>
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                            <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
+                            <p className="text-3xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
+                            <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_units}</p>
+                          </div>
+                        </div>
+                        {rows.length > 0 && (
                           <div className="space-y-3">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                             {rows.map(u => (
                               <div key={u.user_id} className="rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-400">{u.orders} замовл. · {u.units} од.</span>
-                                  </div>
+                                  <span className="text-xs text-gray-400">{u.orders} замовл. · {u.units} од.</span>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div>
@@ -690,29 +691,79 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                 </div>
                               </div>
                             ))}
-                            {/* Total row */}
-                            <div className="mt-2 pt-3 flex items-center justify-between rounded-2xl px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/80">
+                            <div className="mt-2 flex items-center justify-between rounded-2xl px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/80">
                               <span className="text-base font-bold text-gray-600">Всього</span>
                               <div className="flex items-center gap-4">
-                                <span>
-                                  <span className="text-2xl font-bold text-emerald-700">
-                                    {rows.reduce((s, u) => s + u.orders, 0)}
-                                  </span>
-                                  <span className="text-sm text-gray-400 ml-1">замовл.</span>
-                                </span>
-                                <span>
-                                  <span className="text-2xl font-bold text-blue-700">
-                                    {rows.reduce((s, u) => s + u.units, 0)}
-                                  </span>
-                                  <span className="text-sm text-gray-400 ml-1">од.</span>
-                                </span>
+                                <span><span className="text-2xl font-bold text-emerald-700">{rows.reduce((s, u) => s + u.orders, 0)}</span><span className="text-sm text-gray-400 ml-1">замовл.</span></span>
+                                <span><span className="text-2xl font-bold text-blue-700">{rows.reduce((s, u) => s + u.units, 0)}</span><span className="text-sm text-gray-400 ml-1">од.</span></span>
                               </div>
                             </div>
                           </div>
-                        )
-                      })()}
-                    </>
-                  )}
+                        )}
+                      </>
+                    )
+                  })()}
+
+                  {/* === 7 ДНІВ / 1 МІСЯЦЬ === */}
+                  {chartPeriod !== '1d' && analytics.by_user_today && (() => {
+                    const rows = analytics.by_user_today
+                    if (rows.length === 0) return <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
+                    const totalO = rows.reduce((s, u) => s + u.total_orders, 0)
+                    const totalU = rows.reduce((s, u) => s + u.total_units, 0)
+                    const days = chartPeriod === '7d' ? 7 : 30
+                    const maxO = Math.max(...rows.map(u => u.total_orders), 1)
+                    const maxU = Math.max(...rows.map(u => u.total_units), 1)
+                    return (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                            <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
+                            <p className="text-3xl font-extrabold text-emerald-700">{(totalO / (days * 8)).toFixed(1)}</p>
+                            <p className="text-sm text-gray-400 mt-1">Всього: {totalO}</p>
+                          </div>
+                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                            <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
+                            <p className="text-3xl font-extrabold text-blue-700">{(totalU / (days * 8)).toFixed(1)}</p>
+                            <p className="text-sm text-gray-400 mt-1">Всього: {totalU}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
+                          {rows.map(u => (
+                            <div key={u.user_id} className="rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
+                                <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                <div>
+                                  <div className="flex justify-between text-xs text-gray-400">
+                                    <span>Замовлень/год</span>
+                                    <span className="font-semibold text-emerald-600">{u.orders_per_hour.toFixed(1)}</span>
+                                  </div>
+                                  <KpiBar value={u.total_orders} max={maxO} color="#10b981" />
+                                </div>
+                                <div>
+                                  <div className="flex justify-between text-xs text-gray-400">
+                                    <span>Одиниць/год</span>
+                                    <span className="font-semibold text-blue-600">{u.units_per_hour.toFixed(1)}</span>
+                                  </div>
+                                  <KpiBar value={u.total_units} max={maxU} color="#3b82f6" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="mt-2 flex items-center justify-between rounded-2xl px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/80">
+                            <span className="text-base font-bold text-gray-600">Всього</span>
+                            <div className="flex items-center gap-4">
+                              <span><span className="text-2xl font-bold text-emerald-700">{totalO}</span><span className="text-sm text-gray-400 ml-1">замовл.</span></span>
+                              <span><span className="text-2xl font-bold text-blue-700">{totalU}</span><span className="text-sm text-gray-400 ml-1">од.</span></span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
 
                 {/* Monthly totals */}
@@ -720,11 +771,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                     <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl p-3 text-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
+                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border border-white/80">
                         <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
                         <p className="text-xs text-gray-400 mt-0.5">замовлень</p>
                       </div>
-                      <div className="rounded-2xl p-3 text-center bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
+                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50/60 border border-white/80">
                         <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
                         <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
                       </div>
@@ -733,10 +784,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 )}
 
                 {/* Chart: orders */}
-                <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70">
+                {chartPeriod !== '1d' && <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Замовлення</p>
-                    <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
+                    <span className="text-xs text-gray-400">{chartPeriod === '1d' ? '1 день' : chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
                   </div>
                   {chartData.length > 0 ? (
                     <>
@@ -749,10 +800,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   ) : (
                     <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
                   )}
-                </div>
+                </div>}
 
                 {/* Chart: units */}
-                <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-violet-50/90 via-white/80 to-indigo-50/70">
+                {chartPeriod !== '1d' && <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-violet-50/90 via-white/80 to-indigo-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Одиниці товару</p>
                     <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
@@ -768,7 +819,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   ) : (
                     <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
                   )}
-                </div>
+                </div>}
 
                 {/* Bonus table — crm_admin / admin 1505/7985, users with >= 80 orders */}
                 {showBonusAsAdmin && analyticsDayData && analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
