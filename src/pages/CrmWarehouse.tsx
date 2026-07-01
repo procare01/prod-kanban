@@ -13,12 +13,99 @@ type ChartPeriod = '1d' | '7d' | '30d'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toDateInputValue(d: Date) {
-  return d.toISOString().slice(0, 10) // YYYY-MM-DD for <input type="date">
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}` // YYYY-MM-DD for <input type="date">
+}
+
+function parseDateInputValue(value: string) {
+  const [y, m, d] = value.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 function formatDisplayDate(iso: string) {
   const [y, m, d] = iso.split('-')
   return `${d}.${m}.${y.slice(2)}`
+}
+
+function startOfWeek(d: Date) {
+  const copy = new Date(d)
+  const day = (copy.getDay() + 6) % 7
+  copy.setDate(copy.getDate() - day)
+  return copy
+}
+
+function endOfWeek(d: Date) {
+  const copy = startOfWeek(d)
+  copy.setDate(copy.getDate() + 6)
+  return copy
+}
+
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1)
+}
+
+function endOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0)
+}
+
+function getPeriodRange(period: ChartPeriod, date: string) {
+  const anchor = parseDateInputValue(date)
+  const today = new Date()
+  const start = period === '7d'
+    ? startOfWeek(anchor)
+    : period === '30d'
+      ? startOfMonth(anchor)
+      : anchor
+  const rawEnd = period === '7d'
+    ? endOfWeek(anchor)
+    : period === '30d'
+      ? endOfMonth(anchor)
+      : anchor
+  const end = rawEnd > today ? today : rawEnd
+  return {
+    start: toDateInputValue(start),
+    end: toDateInputValue(end),
+  }
+}
+
+function getPeriodLabel(period: ChartPeriod) {
+  if (period === '1d') return '1 день'
+  if (period === '7d') return 'Тиждень'
+  return 'Місяць'
+}
+
+function getKpiPeriodLabel(period: ChartPeriod, isToday: boolean, date: string) {
+  if (period === '1d') return `ККД за ${isToday ? 'сьогодні' : formatDisplayDate(date)}`
+  const { start, end } = getPeriodRange(period, date)
+  const label = start === end ? formatDisplayDate(start) : `${formatDisplayDate(start)}–${formatDisplayDate(end)}`
+  return period === '7d' ? `ККД за тиждень ${label}` : `ККД за місяць ${label}`
+}
+
+function getPeriodRangeLabel(period: ChartPeriod, date: string) {
+  const { start, end } = getPeriodRange(period, date)
+  return start === end ? formatDisplayDate(start) : `${formatDisplayDate(start)}–${formatDisplayDate(end)}`
+}
+
+function shiftAnalyticsDate(date: string, period: ChartPeriod, direction: -1 | 1) {
+  const d = parseDateInputValue(date)
+  if (period === '30d') {
+    d.setMonth(d.getMonth() + direction, 1)
+  } else {
+    d.setDate(d.getDate() + direction * (period === '7d' ? 7 : 1))
+  }
+  const next = toDateInputValue(d)
+  const today = toDateInputValue(new Date())
+  return next > today ? today : next
+}
+
+function isCurrentAnalyticsPeriod(days: number, date: string) {
+  const today = toDateInputValue(new Date())
+  if (days === 1) return date === today
+  if (days === 7) return getPeriodRange('7d', date).start === getPeriodRange('7d', today).start
+  if (days === 30) return getPeriodRange('30d', date).start === getPeriodRange('30d', today).start
+  return date === today
 }
 
 // ─── Bonus calculation ────────────────────────────────────────────────────────
@@ -112,7 +199,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   // Analytics date picker
   const [analyticsDate, setAnalyticsDate] = useState(toDateInputValue(new Date()))
-  const isAnalyticsToday = analyticsDate === toDateInputValue(new Date())
+  const todayValue = toDateInputValue(new Date())
+  const isAnalyticsToday = analyticsDate === todayValue
+  const isAnalyticsCurrentPeriod = useMemo(() => {
+    if (chartPeriod === '1d') return isAnalyticsToday
+    return getPeriodRange(chartPeriod, analyticsDate).start === getPeriodRange(chartPeriod, todayValue).start
+  }, [analyticsDate, chartPeriod, isAnalyticsToday, todayValue])
 
   // Data
   const [dayData, setDayData] = useState<CrmTodayData | null>(null)
@@ -128,6 +220,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [showMonthlyBonus, setShowMonthlyBonus] = useState(false)
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
+  const [analyticsError, setAnalyticsError] = useState('')
 
   const isToday = selectedDate === toDateInputValue(new Date())
 
@@ -148,26 +241,49 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const fetchAnalyticsDay = useCallback(async (date: string) => {
     try {
-      const { data } = await supabase.rpc('get_crm_today', {
+      const { data, error } = await supabase.rpc('get_crm_today', {
         p_user_id: user.id,
         p_is_admin: isAdmin,
         p_date: date,
       })
+      if (error) throw error
       if (data) setAnalyticsDayData(data as CrmTodayData)
-    } catch {/* ignore */}
+    } catch {
+      setAnalyticsDayData(null)
+    }
   }, [user.id, isAdmin])
 
   // ── Fetch analytics ─────────────────────────────────────────────────────────
-  const fetchAnalytics = useCallback(async (days: number) => {
+  const fetchAnalytics = useCallback(async (days: number, date: string) => {
     setLoadingAnalytics(true)
+    setAnalyticsError('')
     try {
-      const { data } = await supabase.rpc('get_crm_analytics', {
+      const { data, error } = await supabase.rpc('get_crm_analytics', {
         p_user_id: user.id,
         p_is_admin: isAdmin,
         p_days: days,
+        p_date: date,
       })
+      if (error) throw error
       if (data) setAnalytics(data as CrmAnalytics)
-    } catch {/* ignore */} finally {
+    } catch {
+      const currentPeriod = isCurrentAnalyticsPeriod(days, date)
+      try {
+        const { data, error } = await supabase.rpc('get_crm_analytics', {
+          p_user_id: user.id,
+          p_is_admin: isAdmin,
+          p_days: days,
+        })
+        if (error) throw error
+        if (data) setAnalytics(data as CrmAnalytics)
+        if (!currentPeriod) {
+          setAnalyticsError('Для перегляду попередніх тижнів і місяців потрібно застосувати міграцію 022 у Supabase.')
+        }
+      } catch {
+        setAnalytics(null)
+        setAnalyticsError('Не вдалося завантажити аналітику. Перевірте, чи застосовані CRM SQL-міграції.')
+      }
+    } finally {
       setLoadingAnalytics(false)
     }
   }, [user.id, isAdmin])
@@ -212,7 +328,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   useEffect(() => {
     if (tab === 'analytics') {
-      fetchAnalytics(chartPeriod === '1d' ? 1 : chartPeriod === '7d' ? 7 : 30)
+      fetchAnalytics(chartPeriod === '1d' ? 1 : chartPeriod === '7d' ? 7 : 30, analyticsDate)
       fetchAnalyticsDay(analyticsDate)
     }
   }, [tab, chartPeriod, fetchAnalytics, fetchAnalyticsDay, analyticsDate])
@@ -270,8 +386,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   // ── Derived ──────────────────────────────────────────────────────────────────
   const chartData = useMemo(() => {
     if (!analytics?.daily) return []
-    return analytics.daily.slice(-(chartPeriod === '1d' ? 1 : chartPeriod === '7d' ? 7 : 30))
-  }, [analytics, chartPeriod])
+    return analytics.daily
+  }, [analytics])
 
   const entries = useMemo(() => {
     if (!dayData?.entries) return []
@@ -584,7 +700,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
                     }`}
                 >
-                  {p === '1d' ? '1 день' : p === '7d' ? '7 днів' : '1 місяць'}
+                  {getPeriodLabel(p)}
                 </button>
               ))}
             </div>
@@ -595,48 +711,41 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </div>
             )}
 
+            {analyticsError && !loadingAnalytics && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {analyticsError}
+              </div>
+            )}
+
             {analytics && !loadingAnalytics && (
               <>
                 {/* KPI block — switches by chartPeriod */}
                 <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <p className="text-sm font-semibold text-gray-700">
-                      {chartPeriod === '1d'
-                        ? `ККД за ${isAnalyticsToday ? 'сьогодні' : formatDisplayDate(analyticsDate)}`
-                        : chartPeriod === '7d' ? 'ККД за 7 днів' : 'ККД за 1 місяць'}
+                      {getKpiPeriodLabel(chartPeriod, isAnalyticsToday, analyticsDate)}
                     </p>
-                    {chartPeriod === '1d' && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => {
-                            const d = new Date(analyticsDate)
-                            d.setDate(d.getDate() - 1)
-                            setAnalyticsDate(toDateInputValue(d))
-                          }}
-                          className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                        >‹</button>
-                        <input
-                          type="date"
-                          value={analyticsDate}
-                          max={toDateInputValue(new Date())}
-                          onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
-                          className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
-                                     focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                        />
-                        <button
-                          onClick={() => {
-                            const d = new Date(analyticsDate)
-                            d.setDate(d.getDate() + 1)
-                            const next = toDateInputValue(d)
-                            if (next <= toDateInputValue(new Date())) setAnalyticsDate(next)
-                          }}
-                          disabled={isAnalyticsToday}
-                          className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >›</button>
-                      </div>
-                    )}
-                    {chartPeriod !== '1d' && !isAnalyticsToday && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setAnalyticsDate(prev => shiftAnalyticsDate(prev, chartPeriod, -1))}
+                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      >‹</button>
+                      <input
+                        type="date"
+                        value={analyticsDate}
+                        max={todayValue}
+                        onChange={e => { if (e.target.value) setAnalyticsDate(e.target.value) }}
+                        className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
+                                   focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      />
+                      <button
+                        onClick={() => setAnalyticsDate(prev => shiftAnalyticsDate(prev, chartPeriod, 1))}
+                        disabled={isAnalyticsCurrentPeriod}
+                        className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >›</button>
+                    </div>
+                    {!isAnalyticsCurrentPeriod && (
                       <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">минуле</span>
                     )}
                   </div>
@@ -712,7 +821,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     if (rows.length === 0) return <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
                     const totalO = rows.reduce((s, u) => s + u.total_orders, 0)
                     const totalU = rows.reduce((s, u) => s + u.total_units, 0)
-                    const days = chartPeriod === '7d' ? 7 : 30
+                    const days = Math.max(chartData.length, 1)
                     const maxO = Math.max(...rows.map(u => u.total_orders), 1)
                     const maxU = Math.max(...rows.map(u => u.total_units), 1)
                     return (
@@ -771,7 +880,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 {/* Monthly totals */}
                 {analytics.monthly && chartPeriod === '30d' && (
                   <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">За цей місяць</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-3">За місяць {getPeriodRangeLabel(chartPeriod, analyticsDate)}</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
                         <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
@@ -789,7 +898,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 {chartPeriod !== '1d' && <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Замовлення</p>
-                    <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
+                    <span className="text-xs text-gray-400">{getPeriodRangeLabel(chartPeriod, analyticsDate)}</span>
                   </div>
                   {chartData.length > 0 ? (
                     <>
@@ -808,7 +917,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 {chartPeriod !== '1d' && <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-violet-50/90 via-white/80 to-indigo-50/70">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-gray-700">Одиниці товару</p>
-                    <span className="text-xs text-gray-400">{chartPeriod === '7d' ? '7 днів' : '30 днів'}</span>
+                    <span className="text-xs text-gray-400">{getPeriodRangeLabel(chartPeriod, analyticsDate)}</span>
                   </div>
                   {chartData.length > 0 ? (
                     <>
