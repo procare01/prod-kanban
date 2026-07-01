@@ -10,7 +10,7 @@ interface Props {
 
 type Tab = 'input' | 'analytics' | 'chart'
 type ChartPeriod = '1d' | '7d' | '30d'
-type CrmBonusRow = { user_id: string; user_name: string; orders: number }
+type CrmBonusRow = { user_id: string; user_name: string; orders: number; bonus: number; days_active: number }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toDateInputValue(d: Date) {
@@ -466,25 +466,40 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         })
         if (error) throw error
         const row = data as CrmTodayData | null
+        const dayByUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
         row?.entries?.forEach(entry => {
-          if (!byUser[entry.user_id]) {
-            byUser[entry.user_id] = {
+          if (!dayByUser[entry.user_id]) {
+            dayByUser[entry.user_id] = {
               user_id: entry.user_id,
               user_name: entry.user_name,
               orders: 0,
             }
           }
-          byUser[entry.user_id].orders += entry.orders_count
+          dayByUser[entry.user_id].orders += entry.orders_count
+        })
+        Object.values(dayByUser).forEach(dayRow => {
+          if (!byUser[dayRow.user_id]) {
+            byUser[dayRow.user_id] = {
+              user_id: dayRow.user_id,
+              user_name: dayRow.user_name,
+              orders: 0,
+              bonus: 0,
+              days_active: 0,
+            }
+          }
+          byUser[dayRow.user_id].orders += dayRow.orders
+          byUser[dayRow.user_id].bonus += calcBonus(dayRow.orders, bonusSettings)
+          byUser[dayRow.user_id].days_active += 1
         })
       }))
 
-      setAnalyticsBonusRows(Object.values(byUser))
+      setAnalyticsBonusRows(Object.values(byUser).sort((a, b) => b.bonus - a.bonus))
     } catch {
       setAnalyticsBonusRows([])
     } finally {
       setLoadingAnalyticsBonus(false)
     }
-  }, [user.id, isAdmin, showBonusAsAdmin])
+  }, [user.id, isAdmin, showBonusAsAdmin, bonusSettings])
 
   const fetchMonthlyBonus = useCallback(async () => {
     try {
@@ -1242,7 +1257,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     </div>
                   )
                   if (rows.length === 0) return null
-                  const bonusRows = rows.filter(u => u.orders >= 80)
+                  const bonusRows = rows.filter(u => u.bonus > 0)
                   if (bonusRows.length === 0) return (
                     <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
                       <div className="flex items-center gap-2 mb-1">
@@ -1253,7 +1268,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень за період</p>
                     </div>
                   )
-                  const totalBonus = rows.reduce((s, u) => s + calcBonus(u.orders, bonusSettings), 0)
+                  const totalBonus = rows.reduce((s, u) => s + u.bonus, 0)
                   return (
                     <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
                       <div className="flex items-center justify-between mb-4">
@@ -1268,16 +1283,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       </div>
                       <div className="space-y-2">
                         {rows.map(u => {
-                          const bonus = calcBonus(u.orders, bonusSettings)
                           return (
                             <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
                               <div>
                                 <p className="text-base font-semibold text-gray-800">{u.user_name}</p>
-                                <p className="text-sm text-gray-400">{u.orders} замовлень</p>
+                                <p className="text-sm text-gray-400">
+                                  {u.orders} замовл. · {u.days_active} {u.days_active === 1 ? 'день' : 'дні'}
+                                </p>
                               </div>
                               <div className="text-right">
-                                {bonus > 0
-                                  ? <p className="text-2xl font-extrabold text-amber-600">{bonus} <span className="text-base font-semibold text-amber-400">грн</span></p>
+                                {u.bonus > 0
+                                  ? <p className="text-2xl font-extrabold text-amber-600">{u.bonus} <span className="text-base font-semibold text-amber-400">грн</span></p>
                                   : <p className="text-lg text-gray-300">—</p>
                                 }
                               </div>
