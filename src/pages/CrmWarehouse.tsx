@@ -1181,14 +1181,23 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )}
                 </div>}
 
-                {/* Bonus table — crm_admin / admin 1505/7985, users with >= 80 orders */}
-                {showBonusAsAdmin && analyticsDayData && analyticsDayData.entries && analyticsDayData.entries.length > 0 && (() => {
-                  const byUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
-                  analyticsDayData.entries.forEach(e => {
-                    if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0 }
-                    byUser[e.user_id].orders += e.orders_count
-                  })
-                  const rows = Object.values(byUser)
+                {/* Bonus table — crm_admin / admin 1505/7985, calculated for selected analytics period */}
+                {showBonusAsAdmin && (() => {
+                  const rows = chartPeriod === '1d'
+                    ? (() => {
+                        const byUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
+                        analyticsDayData?.entries?.forEach(e => {
+                          if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0 }
+                          byUser[e.user_id].orders += e.orders_count
+                        })
+                        return Object.values(byUser)
+                      })()
+                    : (analytics.by_user_today ?? []).map(u => ({
+                        user_id: u.user_id,
+                        user_name: u.user_name,
+                        orders: u.total_orders,
+                      }))
+                  if (rows.length === 0) return null
                   const bonusRows = rows.filter(u => u.orders >= 80)
                   if (bonusRows.length === 0) return (
                     <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
@@ -1196,7 +1205,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         <span className="text-amber-500">🎁</span>
                         <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
                       </div>
-                      <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень</p>
+                      <p className="text-xs text-gray-400 mb-1">{getPeriodRangeLabel(chartPeriod, analyticsDate)}</p>
+                      <p className="text-sm text-gray-400">Поки ніхто не досяг 80 замовлень за період</p>
                     </div>
                   )
                   const totalBonus = rows.reduce((s, u) => s + calcBonus(u.orders, bonusSettings), 0)
@@ -1205,7 +1215,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <span className="text-amber-500">🎁</span>
-                          <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                            <p className="text-xs text-gray-400">{getPeriodRangeLabel(chartPeriod, analyticsDate)}</p>
+                          </div>
                         </div>
                         <span className="text-sm font-extrabold text-amber-600">Всього: {totalBonus} грн</span>
                       </div>
