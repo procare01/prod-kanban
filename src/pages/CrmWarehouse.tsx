@@ -269,7 +269,6 @@ function SmoothOrdersChart({ data }: { data: CrmDailyPoint[] }) {
 
           {points.map((p, i) => (
             <g key={p.date}>
-              <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#0ea5e9" strokeWidth="3" />
               {(data.length <= 14 || i === 0 || i === data.length - 1 || i % Math.ceil(data.length / 6) === 0) && (
                 <text x={p.x} y={H - 11} textAnchor="middle" className="fill-gray-400" fontSize="11">
                   {p.date.slice(5)}
