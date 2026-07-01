@@ -10,6 +10,7 @@ interface Props {
 
 type Tab = 'input' | 'analytics' | 'chart'
 type ChartPeriod = '1d' | '7d' | '30d'
+type CrmBonusRow = { user_id: string; user_name: string; orders: number }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toDateInputValue(d: Date) {
@@ -334,6 +335,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
   const [analyticsError, setAnalyticsError] = useState('')
+  const [analyticsBonusRows, setAnalyticsBonusRows] = useState<CrmBonusRow[]>([])
+  const [loadingAnalyticsBonus, setLoadingAnalyticsBonus] = useState(false)
   const [graphData, setGraphData] = useState<CrmDailyPoint[]>([])
   const [loadingGraph, setLoadingGraph] = useState(false)
   const [graphError, setGraphError] = useState('')
@@ -443,6 +446,46 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     }
   }, [user.id, isAdmin])
 
+  const fetchAnalyticsBonusRows = useCallback(async (period: ChartPeriod, date: string) => {
+    if (!showBonusAsAdmin) {
+      setAnalyticsBonusRows([])
+      return
+    }
+
+    setLoadingAnalyticsBonus(true)
+    try {
+      const { start, end } = getPeriodRange(period, date)
+      const days = getDateRangeDays(start, end)
+      const byUser: Record<string, CrmBonusRow> = {}
+
+      await Promise.all(days.map(async day => {
+        const { data, error } = await supabase.rpc('get_crm_today', {
+          p_user_id: user.id,
+          p_is_admin: isAdmin,
+          p_date: day,
+        })
+        if (error) throw error
+        const row = data as CrmTodayData | null
+        row?.entries?.forEach(entry => {
+          if (!byUser[entry.user_id]) {
+            byUser[entry.user_id] = {
+              user_id: entry.user_id,
+              user_name: entry.user_name,
+              orders: 0,
+            }
+          }
+          byUser[entry.user_id].orders += entry.orders_count
+        })
+      }))
+
+      setAnalyticsBonusRows(Object.values(byUser))
+    } catch {
+      setAnalyticsBonusRows([])
+    } finally {
+      setLoadingAnalyticsBonus(false)
+    }
+  }, [user.id, isAdmin, showBonusAsAdmin])
+
   const fetchMonthlyBonus = useCallback(async () => {
     try {
       const { data } = await supabase.rpc('get_crm_monthly_bonus', {
@@ -485,8 +528,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     if (tab === 'analytics') {
       fetchAnalytics(chartPeriod === '1d' ? 1 : chartPeriod === '7d' ? 7 : 30, analyticsDate)
       fetchAnalyticsDay(analyticsDate)
+      fetchAnalyticsBonusRows(chartPeriod, analyticsDate)
     }
-  }, [tab, chartPeriod, fetchAnalytics, fetchAnalyticsDay, analyticsDate])
+  }, [tab, chartPeriod, fetchAnalytics, fetchAnalyticsDay, fetchAnalyticsBonusRows, analyticsDate])
 
   useEffect(() => {
     if (tab === 'chart') {
@@ -887,31 +931,30 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => {
-                    setGraphStartDate(toDateInputValue(addDays(new Date(), -6)))
-                    setGraphEndDate(todayValue)
-                  }}
-                  className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
-                >
-                  7 днів
-                </button>
-                <button
-                  onClick={() => {
                     setGraphStartDate(toDateInputValue(addDays(new Date(), -29)))
                     setGraphEndDate(todayValue)
                   }}
                   className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
                 >
-                  30 днів
+                  1 місяць
                 </button>
                 <button
                   onClick={() => {
-                    const start = startOfMonth(new Date())
-                    setGraphStartDate(toDateInputValue(start))
+                    setGraphStartDate(toDateInputValue(addDays(new Date(), -89)))
                     setGraphEndDate(todayValue)
                   }}
                   className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
                 >
-                  Місяць
+                  3 місяці
+                </button>
+                <button
+                  onClick={() => {
+                    setGraphStartDate(toDateInputValue(addDays(new Date(), -179)))
+                    setGraphEndDate(todayValue)
+                  }}
+                  className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
+                >
+                  6 місяців
                 </button>
               </div>
             </div>
@@ -1183,20 +1226,21 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                 {/* Bonus table — crm_admin / admin 1505/7985, calculated for selected analytics period */}
                 {showBonusAsAdmin && (() => {
-                  const rows = chartPeriod === '1d'
-                    ? (() => {
-                        const byUser: Record<string, { user_id: string; user_name: string; orders: number }> = {}
-                        analyticsDayData?.entries?.forEach(e => {
-                          if (!byUser[e.user_id]) byUser[e.user_id] = { user_id: e.user_id, user_name: e.user_name, orders: 0 }
-                          byUser[e.user_id].orders += e.orders_count
-                        })
-                        return Object.values(byUser)
-                      })()
-                    : (analytics.by_user_today ?? []).map(u => ({
-                        user_id: u.user_id,
-                        user_name: u.user_name,
-                        orders: u.total_orders,
-                      }))
+                  const rows = analyticsBonusRows
+                  if (loadingAnalyticsBonus) return (
+                    <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-500">🎁</span>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                            <p className="text-xs text-gray-400">{getPeriodRangeLabel(chartPeriod, analyticsDate)}</p>
+                          </div>
+                        </div>
+                        <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    </div>
+                  )
                   if (rows.length === 0) return null
                   const bonusRows = rows.filter(u => u.orders >= 80)
                   if (bonusRows.length === 0) return (
