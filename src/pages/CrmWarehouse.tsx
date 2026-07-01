@@ -8,7 +8,7 @@ interface Props {
   onLogout: () => void
 }
 
-type Tab = 'input' | 'analytics'
+type Tab = 'input' | 'analytics' | 'chart'
 type ChartPeriod = '1d' | '7d' | '30d'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,9 +24,27 @@ function parseDateInputValue(value: string) {
   return new Date(y, m - 1, d)
 }
 
+function addDays(d: Date, days: number) {
+  const copy = new Date(d)
+  copy.setDate(copy.getDate() + days)
+  return copy
+}
+
 function formatDisplayDate(iso: string) {
   const [y, m, d] = iso.split('-')
   return `${d}.${m}.${y.slice(2)}`
+}
+
+function getDateRangeDays(start: string, end: string) {
+  const startDate = parseDateInputValue(start)
+  const endDate = parseDateInputValue(end)
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || startDate > endDate) return []
+
+  const days: string[] = []
+  for (let d = startDate; d <= endDate; d = addDays(d, 1)) {
+    days.push(toDateInputValue(d))
+  }
+  return days
 }
 
 function startOfWeek(d: Date) {
@@ -108,6 +126,12 @@ function isCurrentAnalyticsPeriod(days: number, date: string) {
   return date === today
 }
 
+function getTabLabel(tab: Tab) {
+  if (tab === 'analytics') return 'Аналітика'
+  if (tab === 'chart') return 'Графік'
+  return 'Введення даних'
+}
+
 // ─── Bonus calculation ────────────────────────────────────────────────────────
 interface BonusSettings { threshold: number; rate_mid: number; rate_high: number }
 // threshold=80: ≤80 → 0, 81–100 → (orders−80)×rate_mid, 101+ → (orders−80)×rate_high
@@ -171,6 +195,94 @@ function KpiBar({ value, max, color }: { value: number; max: number; color: stri
   )
 }
 
+// ─── Smooth orders chart ──────────────────────────────────────────────────────
+function SmoothOrdersChart({ data }: { data: CrmDailyPoint[] }) {
+  const W = 640
+  const H = 240
+  const PAD_X = 34
+  const PAD_TOP = 28
+  const PAD_BOTTOM = 34
+  const max = Math.max(...data.map(d => d.orders), 1)
+  const plotW = W - PAD_X * 2
+  const plotH = H - PAD_TOP - PAD_BOTTOM
+
+  if (data.length === 0) {
+    return <p className="text-sm text-gray-400 text-center py-10">Немає даних за вибраний період</p>
+  }
+
+  const points = data.map((d, i) => {
+    const x = data.length === 1 ? W / 2 : PAD_X + (i / (data.length - 1)) * plotW
+    const y = PAD_TOP + plotH * (1 - d.orders / max)
+    return { x, y, value: d.orders, date: d.date }
+  })
+
+  const linePath = points.reduce((path, p, i) => {
+    if (i === 0) return `M ${p.x},${p.y}`
+    const prev = points[i - 1]
+    const midX = (prev.x + p.x) / 2
+    return `${path} C ${midX},${prev.y} ${midX},${p.y} ${p.x},${p.y}`
+  }, '')
+  const areaPath = `${linePath} L ${points[points.length - 1].x},${H - PAD_BOTTOM} L ${points[0].x},${H - PAD_BOTTOM} Z`
+  const grid = [0, 0.25, 0.5, 0.75, 1].map(f => {
+    const y = PAD_TOP + plotH * (1 - f)
+    return { y, value: Math.round(max * f) }
+  })
+  const total = data.reduce((s, d) => s + d.orders, 0)
+  const average = data.length > 0 ? total / data.length : 0
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl p-4 bg-emerald-50/80 border border-emerald-100">
+          <p className="text-xs text-gray-400 mb-1">Всього замовлень</p>
+          <p className="text-3xl font-extrabold text-emerald-700">{total}</p>
+        </div>
+        <div className="rounded-2xl p-4 bg-blue-50/80 border border-blue-100">
+          <p className="text-xs text-gray-400 mb-1">Середнє за день</p>
+          <p className="text-3xl font-extrabold text-blue-700">{average.toFixed(1)}</p>
+        </div>
+      </div>
+
+      <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-white/90 via-emerald-50/70 to-sky-50/80">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="ordersLineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#10b981" />
+              <stop offset="55%" stopColor="#0ea5e9" />
+              <stop offset="100%" stopColor="#2563eb" />
+            </linearGradient>
+            <linearGradient id="ordersAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+
+          {grid.map((g, i) => (
+            <g key={i}>
+              <line x1={PAD_X} x2={W - PAD_X} y1={g.y} y2={g.y} stroke="#dbeafe" strokeWidth="1" strokeDasharray="4 5" />
+              <text x={PAD_X - 8} y={g.y + 4} textAnchor="end" className="fill-gray-400" fontSize="11">{g.value}</text>
+            </g>
+          ))}
+
+          <path d={areaPath} fill="url(#ordersAreaGrad)" />
+          <path d={linePath} fill="none" stroke="url(#ordersLineGrad)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+
+          {points.map((p, i) => (
+            <g key={p.date}>
+              <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#0ea5e9" strokeWidth="3" />
+              {(data.length <= 14 || i === 0 || i === data.length - 1 || i % Math.ceil(data.length / 6) === 0) && (
+                <text x={p.x} y={H - 11} textAnchor="middle" className="fill-gray-400" fontSize="11">
+                  {p.date.slice(5)}
+                </text>
+              )}
+            </g>
+          ))}
+        </svg>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function CrmWarehouse({ user, onLogout }: Props) {
   const navigate = useNavigate()
@@ -184,8 +296,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
-  // super_admin: default analytics, but sees both tabs; crm_admin/ceo: analytics only
-  const [tab, setTab] = useState<Tab>((isCrmAdmin || isCeo || isSuperAdmin) ? 'analytics' : 'input')
+  // super_admin/admin/crm_admin/ceo: default analytics; crm: input only
+  const [tab, setTab] = useState<Tab>(isCrm ? 'input' : 'analytics')
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1d')
 
   // Input form
@@ -200,6 +312,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   // Analytics date picker
   const [analyticsDate, setAnalyticsDate] = useState(toDateInputValue(new Date()))
   const todayValue = toDateInputValue(new Date())
+  const [graphStartDate, setGraphStartDate] = useState(toDateInputValue(addDays(new Date(), -29)))
+  const [graphEndDate, setGraphEndDate] = useState(todayValue)
   const isAnalyticsToday = analyticsDate === todayValue
   const isAnalyticsCurrentPeriod = useMemo(() => {
     if (chartPeriod === '1d') return isAnalyticsToday
@@ -221,6 +335,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
   const [analyticsError, setAnalyticsError] = useState('')
+  const [graphData, setGraphData] = useState<CrmDailyPoint[]>([])
+  const [loadingGraph, setLoadingGraph] = useState(false)
+  const [graphError, setGraphError] = useState('')
 
   const isToday = selectedDate === toDateInputValue(new Date())
 
@@ -288,6 +405,45 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     }
   }, [user.id, isAdmin])
 
+  const fetchGraphData = useCallback(async (start: string, end: string) => {
+    setLoadingGraph(true)
+    setGraphError('')
+    try {
+      const days = getDateRangeDays(start, end)
+      if (days.length === 0) {
+        setGraphData([])
+        setGraphError('Оберіть коректний проміжок дат')
+        return
+      }
+      if (days.length > 210) {
+        setGraphData([])
+        setGraphError('Максимальний проміжок для графіка — 210 днів')
+        return
+      }
+
+      const results = await Promise.all(days.map(async date => {
+        const { data, error } = await supabase.rpc('get_crm_today', {
+          p_user_id: user.id,
+          p_is_admin: isAdmin,
+          p_date: date,
+        })
+        if (error) throw error
+        const row = (data ?? { total_orders: 0, total_units: 0 }) as CrmTodayData
+        return {
+          date,
+          orders: row.total_orders ?? 0,
+          units: row.total_units ?? 0,
+        } as CrmDailyPoint
+      }))
+      setGraphData(results)
+    } catch {
+      setGraphData([])
+      setGraphError('Не вдалося завантажити графік за вибраний період')
+    } finally {
+      setLoadingGraph(false)
+    }
+  }, [user.id, isAdmin])
+
   const fetchMonthlyBonus = useCallback(async () => {
     try {
       const { data } = await supabase.rpc('get_crm_monthly_bonus', {
@@ -332,6 +488,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       fetchAnalyticsDay(analyticsDate)
     }
   }, [tab, chartPeriod, fetchAnalytics, fetchAnalyticsDay, analyticsDate])
+
+  useEffect(() => {
+    if (tab === 'chart') {
+      fetchGraphData(graphStartDate, graphEndDate)
+    }
+  }, [tab, graphStartDate, graphEndDate, fetchGraphData])
 
   // ── Submit entry ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -431,10 +593,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* Tabs: crm — input only; crm_admin/ceo — analytics only; super_admin/admin — both (analytics first for super_admin) */}
-        {!isCrm && !isCrmAdmin && !isCeo && (
+        {/* Tabs: crm — input only; others see analytics and graph, admins also see input */}
+        {!isCrm && (
           <div className="flex gap-2">
-            {(isSuperAdmin ? ['analytics', 'input'] : ['input', 'analytics'] as Tab[]).map(t => (
+            {(['analytics', 'chart', ...(isCrmAdmin || isCeo ? [] : ['input'])] as Tab[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t as Tab)}
@@ -445,7 +607,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
                   }`}
               >
-                {t === 'input' ? 'Введення даних' : 'Аналітика'}
+                {getTabLabel(t)}
               </button>
             ))}
           </div>
@@ -681,6 +843,94 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   })}
                 </div>
               </div>
+            )}
+          </>
+        )}
+
+        {/* ── GRAPH TAB ──────────────────────────────────────────────────────── */}
+        {tab === 'chart' && (
+          <>
+            <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Графік замовлень</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Кількість замовлень за вибраний проміжок</p>
+                </div>
+                <span className="text-xs text-gray-400 whitespace-nowrap">{formatDisplayDate(graphStartDate)}–{formatDisplayDate(graphEndDate)}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs text-gray-400 mb-1 block">Від</span>
+                  <input
+                    type="date"
+                    value={graphStartDate}
+                    max={graphEndDate}
+                    onChange={e => { if (e.target.value) setGraphStartDate(e.target.value) }}
+                    className="w-full text-sm text-gray-600 border border-gray-200 rounded-xl px-3 py-2.5
+                               focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs text-gray-400 mb-1 block">До</span>
+                  <input
+                    type="date"
+                    value={graphEndDate}
+                    min={graphStartDate}
+                    max={todayValue}
+                    onChange={e => { if (e.target.value) setGraphEndDate(e.target.value) }}
+                    className="w-full text-sm text-gray-600 border border-gray-200 rounded-xl px-3 py-2.5
+                               focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => {
+                    setGraphStartDate(toDateInputValue(addDays(new Date(), -6)))
+                    setGraphEndDate(todayValue)
+                  }}
+                  className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
+                >
+                  7 днів
+                </button>
+                <button
+                  onClick={() => {
+                    setGraphStartDate(toDateInputValue(addDays(new Date(), -29)))
+                    setGraphEndDate(todayValue)
+                  }}
+                  className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
+                >
+                  30 днів
+                </button>
+                <button
+                  onClick={() => {
+                    const start = startOfMonth(new Date())
+                    setGraphStartDate(toDateInputValue(start))
+                    setGraphEndDate(todayValue)
+                  }}
+                  className="py-2 rounded-xl text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-200 hover:border-blue-200 hover:text-blue-600 transition-colors"
+                >
+                  Місяць
+                </button>
+              </div>
+            </div>
+
+            {loadingGraph && (
+              <div className="flex justify-center py-8">
+                <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {graphError && !loadingGraph && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {graphError}
+              </div>
+            )}
+
+            {!loadingGraph && !graphError && (
+              <SmoothOrdersChart data={graphData} />
             )}
           </>
         )}
