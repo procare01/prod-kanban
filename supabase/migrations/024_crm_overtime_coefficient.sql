@@ -30,7 +30,7 @@ BEGIN
   IF p_regular_hours < 0 OR p_overtime_hours < 0 OR p_saturday_hours < 0
      OR p_overtime_coefficient NOT IN (1.0, 1.2, 1.5, 2.0)
      OR p_saturdays_worked < 0 OR NOT EXISTS (
-       SELECT 1 FROM users WHERE id = p_user_id AND role IN ('crm', 'crm_admin')
+       SELECT 1 FROM users WHERE id = p_user_id AND role = 'crm'
      ) THEN
     RAISE EXCEPTION 'INVALID_CRM_WORK_HOURS';
   END IF;
@@ -133,7 +133,7 @@ BEGIN
       LEFT JOIN performance p ON p.user_id = u.id
       LEFT JOIN crm_work_hours h
         ON h.user_id = u.id AND h.month_start = v_month_start
-      WHERE u.role IN ('crm', 'crm_admin')
+      WHERE u.role = 'crm'
     )
     SELECT COALESCE(
       json_agg(
@@ -159,4 +159,3 @@ BEGIN
   );
 END;
 $$;
-

@@ -131,7 +131,7 @@ function isCurrentAnalyticsPeriod(days: number, date: string) {
 function getTabLabel(tab: Tab) {
   if (tab === 'analytics') return 'Аналітика'
   if (tab === 'chart') return 'Графік'
-  if (tab === 'work-hours') return 'Робочі години'
+  if (tab === 'work-hours') return 'Перегляд'
   return 'Введення даних'
 }
 
@@ -719,9 +719,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const totalOrders = entries.reduce((s, e) => s + e.orders_count, 0)
   const totalUnits  = entries.reduce((s, e) => s + e.units_count, 0)
-  const navigationTabs: Tab[] = canManageCrm
-    ? ['analytics', 'chart', 'input', 'work-hours']
-    : ['analytics', 'chart']
+  const navigationTabs: Tab[] = isCrm
+    ? ['input', 'work-hours']
+    : canManageCrm
+      ? ['analytics', 'chart', 'input', 'work-hours']
+      : ['analytics', 'chart']
 
   return (
     <>
@@ -757,8 +759,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* CRM management tabs are visible only to PIN 1505. */}
-        {!isCrm && (
+        {/* CRM працівник бачить введення своїх даних і власні робочі години. */}
+        {
           <div className={`grid gap-2 ${navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
             {navigationTabs.map(t => (
               <button
@@ -775,7 +777,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </button>
             ))}
           </div>
-        )}
+        }
 
         {/* ── INPUT TAB ──────────────────────────────────────────────────────── */}
         {tab === 'input' && (
@@ -969,6 +971,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </button>
             </div>
 
+            <CrmWorkHours
+              userId={user.id}
+              userPin={user.pin}
+              canManage={canManageCrm}
+              showDashboard={false}
+              selectedDate={selectedDate}
+              onSelectedDateChange={setSelectedDate}
+            />
 
             {/* Recent entries for the selected worker */}
             {displayedInputEntries.length > 0 && (
@@ -1040,9 +1050,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </>
         )}
 
-        {/* ── SUPER ADMIN WORK HOURS + MONTHLY DASHBOARD ───────────────────── */}
-        {tab === 'work-hours' && canManageCrm && (
-          <CrmWorkHours adminId={user.id} adminPin={user.pin} />
+        {/* ── MONTHLY REVIEW ───────────────────────────────────────────────── */}
+        {tab === 'work-hours' && (canManageCrm || isCrm) && (
+          <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} readOnly />
         )}
 
         {/* ── GRAPH TAB ──────────────────────────────────────────────────────── */}

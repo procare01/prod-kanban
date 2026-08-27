@@ -125,7 +125,7 @@ export interface CrmAnalytics {
 export interface CrmWorker {
   id: string
   name: string
-  role: 'crm' | 'crm_admin'
+  role: 'crm'
 }
 
 export interface CrmMonthDashboardRow {
@@ -140,6 +140,19 @@ export interface CrmMonthDashboardRow {
   overtime_coefficient: number
   saturday_hours: number
   saturdays_worked: number
+  saturday_coefficient: number
+  weighted_hours: number
+}
+
+export interface CrmDailyWorkHoursRow {
+  user_id: string
+  user_name: string
+  work_date: string
+  regular_hours: number
+  overtime_hours: number
+  overtime_coefficient: number
+  saturday_hours: number
+  saturday_number: number
   saturday_coefficient: number
   weighted_hours: number
 }
