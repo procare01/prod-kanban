@@ -230,18 +230,18 @@ export function CrmWorkHours({
 
                 <div className="grid grid-cols-2 gap-2">
                   <label className="text-xs text-gray-500">Звичайні години
-                    <input value={draft?.regular_hours ?? ''} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                    <input value={draft?.regular_hours ?? ''} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                   </label>
                   {selectedIsSaturday && (
                     <label className="text-xs text-amber-700">Суботні години · ×{String(saturdayRate).replace('.', ',')}
-                      <input value={draft?.saturday_hours ?? ''} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                      <input value={draft?.saturday_hours ?? ''} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" className="mt-1 h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" />
                     </label>
                   )}
                   <label className="text-xs text-gray-500">Години переробки
-                    <input value={draft?.overtime_hours ?? ''} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                    <input value={draft?.overtime_hours ?? ''} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                   </label>
                   <label className="text-xs text-gray-500">Коефіцієнт переробки
-                    <select value={draft?.overtime_coefficient ?? '1.5'} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={draft?.overtime_coefficient ?? '1.5'} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
                       <option value="1">×1,0</option><option value="1.2">×1,2</option><option value="1.5">×1,5</option><option value="2">×2,0</option>
                     </select>
                   </label>

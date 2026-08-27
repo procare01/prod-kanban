@@ -835,15 +835,15 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Input form */}
             <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
                   <input
                     type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
                     onChange={e => setOrders(e.target.value.replace(/\D/g, ''))} placeholder="0"
-                    className="w-4/5 block mx-auto border border-gray-200 rounded-xl px-4 py-4
+                    className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                               text-gray-800 placeholder-gray-300 text-lg"
+                               text-gray-800 placeholder-gray-300 text-base"
                   />
                 </div>
                 <div>
@@ -851,9 +851,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <input
                     type="text" inputMode="numeric" pattern="[0-9]*" value={units}
                     onChange={e => setUnits(e.target.value.replace(/\D/g, ''))} placeholder="0"
-                    className="w-4/5 block mx-auto border border-gray-200 rounded-xl px-4 py-4
+                    className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
                                focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                               text-gray-800 placeholder-gray-300 text-lg"
+                               text-gray-800 placeholder-gray-300 text-base"
                   />
                 </div>
               </div>
