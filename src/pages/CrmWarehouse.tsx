@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import type { User, CrmTodayData, CrmAnalytics, CrmDailyPoint, CrmMonthlyUserBonus } from '../types'
+import { CrmWorkHours } from '../components/CrmWorkHours'
+import type { User, CrmTodayData, CrmAnalytics, CrmDailyPoint, CrmMonthlyUserBonus, CrmEntry, CrmWorker } from '../types'
 
 interface Props {
   user: User
   onLogout: () => void
 }
 
-type Tab = 'input' | 'analytics' | 'chart'
+type Tab = 'input' | 'analytics' | 'chart' | 'work-hours'
 type ChartPeriod = '1d' | '7d' | '30d'
 type CrmBonusRow = { user_id: string; user_name: string; orders: number; bonus: number; days_active: number }
 
@@ -130,6 +131,7 @@ function isCurrentAnalyticsPeriod(days: number, date: string) {
 function getTabLabel(tab: Tab) {
   if (tab === 'analytics') return 'Аналітика'
   if (tab === 'chart') return 'Графік'
+  if (tab === 'work-hours') return 'Робочі години'
   return 'Введення даних'
 }
 
@@ -279,6 +281,7 @@ function SmoothOrdersChart({ data }: { data: CrmDailyPoint[] }) {
           ))}
         </svg>
       </div>
+
     </div>
   )
 }
@@ -288,17 +291,22 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const navigate = useNavigate()
   const isAdmin = user.role === 'admin' || user.role === 'super_admin' || user.role === 'ceo' || user.role === 'crm_admin'
 
-  const isCrmAdmin = user.role === 'crm_admin'
   const isCrm = user.role === 'crm'
   const isCeo = user.role === 'ceo'
   const isSuperAdmin = user.role === 'super_admin'
+  const canManageCrm = (isSuperAdmin || user.role === 'admin') && user.pin === '1505'
   const isAdminWithCrmAccess = isSuperAdmin ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
   // super_admin/admin/crm_admin/ceo: default analytics; crm: input only
   const [tab, setTab] = useState<Tab>(isCrm ? 'input' : 'analytics')
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1d')
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('30d')
+
+  const [crmWorkers, setCrmWorkers] = useState<CrmWorker[]>([])
+  const [selectedCrmUserId, setSelectedCrmUserId] = useState('')
+  const [loadingWorkers, setLoadingWorkers] = useState(false)
+  const [workersError, setWorkersError] = useState('')
 
   // Input form
   const [orders, setOrders] = useState('')
@@ -308,6 +316,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [editingEntry, setEditingEntry] = useState<CrmEntry | null>(null)
+  const [editOrders, setEditOrders] = useState('')
+  const [editUnits, setEditUnits] = useState('')
+  const [savingEntry, setSavingEntry] = useState(false)
 
   // Analytics date picker
   const [analyticsDate, setAnalyticsDate] = useState(toDateInputValue(new Date()))
@@ -324,7 +336,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [dayData, setDayData] = useState<CrmTodayData | null>(null)
   const [analyticsDayData, setAnalyticsDayData] = useState<CrmTodayData | null>(null)
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
-  const [recentEntries, setRecentEntries] = useState<import('../types').CrmEntry[]>([])
+  const [recentEntries, setRecentEntries] = useState<CrmEntry[]>([])
   const [monthlyBonus, setMonthlyBonus] = useState<CrmMonthlyUserBonus[]>([])
   const [bonusSettings, setBonusSettings] = useState<BonusSettings>(DEFAULT_BONUS)
   const [editRateMid, setEditRateMid] = useState('')
@@ -518,7 +530,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         p_is_admin: isAdmin,
         p_limit: 40,
       })
-      if (data) setRecentEntries(data as import('../types').CrmEntry[])
+      if (data) setRecentEntries(data as CrmEntry[])
     } catch {/* ignore */}
   }, [user.id, isAdmin])
 
@@ -533,11 +545,33 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     } catch {/* ignore */}
   }, [])
 
+  const fetchCrmWorkers = useCallback(async () => {
+    setLoadingWorkers(true)
+    setWorkersError('')
+    try {
+      const { data, error } = await supabase.rpc('get_crm_workers', {
+        p_admin_id: user.id,
+        p_admin_pin: user.pin,
+      })
+      if (error) throw error
+      const workers = (data ?? []) as CrmWorker[]
+      setCrmWorkers(workers)
+      setSelectedCrmUserId(current => current || workers[0]?.id || '')
+    } catch {
+      setWorkersError('Не вдалося завантажити працівників CRM')
+    } finally {
+      setLoadingWorkers(false)
+    }
+  }, [user.id, user.pin])
+
   useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
 
   useEffect(() => { fetchRecent() }, [fetchRecent])
   useEffect(() => { fetchMonthlyBonus() }, [fetchMonthlyBonus])
   useEffect(() => { fetchBonusSettings() }, [fetchBonusSettings])
+  useEffect(() => {
+    if (tab === 'input' && canManageCrm) fetchCrmWorkers()
+  }, [tab, canManageCrm, fetchCrmWorkers])
 
   useEffect(() => {
     if (tab === 'analytics') {
@@ -564,17 +598,31 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     setSubmitting(true)
     setSubmitError('')
     try {
+      if (canManageCrm && !selectedCrmUserId) {
+        setSubmitError('Оберіть працівника CRM')
+        return
+      }
       // For today — use real current time; for past dates — use noon Kyiv (10:00 UTC) to anchor to that date
       const todayStr = toDateInputValue(new Date())
       const ts = selectedDate === todayStr
         ? new Date().toISOString()
         : `${selectedDate}T10:00:00Z`
-      await supabase.rpc('submit_crm_entry', {
-        p_user_id: user.id,
-        p_orders: o,
-        p_units: u,
-        p_created_at: ts,
-      })
+      const { error } = canManageCrm
+        ? await supabase.rpc('submit_crm_entry_as_super_admin', {
+            p_admin_id: user.id,
+            p_admin_pin: user.pin,
+            p_user_id: selectedCrmUserId,
+            p_orders: o,
+            p_units: u,
+            p_created_at: ts,
+          })
+        : await supabase.rpc('submit_crm_entry', {
+            p_user_id: user.id,
+            p_orders: o,
+            p_units: u,
+            p_created_at: ts,
+          })
+      if (error) throw error
       setOrders('')
       setUnits('')
       setSubmitSuccess(true)
@@ -594,12 +642,54 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     if (!window.confirm('Видалити цей запис?')) return
     setDeleting(id)
     try {
-      await supabase.rpc('delete_crm_entry', { p_id: id })
+      const { error } = canManageCrm
+        ? await supabase.rpc('delete_crm_entry_as_super_admin', {
+            p_admin_id: user.id,
+            p_admin_pin: user.pin,
+            p_entry_id: id,
+          })
+        : await supabase.rpc('delete_crm_entry', { p_id: id })
+      if (error) throw error
       fetchDay(selectedDate)
       fetchRecent()
       fetchMonthlyBonus()
     } catch {/* ignore */} finally {
       setDeleting(null)
+    }
+  }
+
+  const beginEditEntry = (entry: CrmEntry) => {
+    setEditingEntry(entry)
+    setEditOrders(String(entry.orders_count))
+    setEditUnits(String(entry.units_count))
+    setSubmitError('')
+  }
+
+  const handleUpdateEntry = async () => {
+    if (!editingEntry || !canManageCrm) return
+    const nextOrders = parseInt(editOrders, 10)
+    const nextUnits = parseInt(editUnits, 10)
+    if (Number.isNaN(nextOrders) || Number.isNaN(nextUnits) || nextOrders < 0 || nextUnits < 0) {
+      setSubmitError('Введіть коректні значення для редагування')
+      return
+    }
+    setSavingEntry(true)
+    setSubmitError('')
+    try {
+      const { error } = await supabase.rpc('update_crm_entry_as_super_admin', {
+        p_admin_id: user.id,
+        p_admin_pin: user.pin,
+        p_entry_id: editingEntry.id,
+        p_orders: nextOrders,
+        p_units: nextUnits,
+      })
+      if (error) throw error
+      setEditingEntry(null)
+      await Promise.all([fetchDay(selectedDate), fetchRecent(), fetchMonthlyBonus()])
+    } catch {
+      setSubmitError('Не вдалося оновити запис')
+    } finally {
+      setSavingEntry(false)
     }
   }
 
@@ -611,14 +701,30 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   const entries = useMemo(() => {
     if (!dayData?.entries) return []
+    if (canManageCrm && selectedCrmUserId) {
+      return dayData.entries.filter(e => e.user_id === selectedCrmUserId)
+    }
     if (isAdmin) return dayData.entries
     return dayData.entries.filter(e => e.user_id === user.id)
-  }, [dayData, isAdmin, user.id])
+  }, [dayData, canManageCrm, selectedCrmUserId, isAdmin, user.id])
+
+  const visibleRecentEntries = useMemo(() => {
+    if (canManageCrm && selectedCrmUserId) {
+      return recentEntries.filter(entry => entry.user_id === selectedCrmUserId)
+    }
+    return recentEntries
+  }, [canManageCrm, recentEntries, selectedCrmUserId])
+
+  const displayedInputEntries = canManageCrm ? entries : visibleRecentEntries
 
   const totalOrders = entries.reduce((s, e) => s + e.orders_count, 0)
   const totalUnits  = entries.reduce((s, e) => s + e.units_count, 0)
+  const navigationTabs: Tab[] = canManageCrm
+    ? ['analytics', 'chart', 'input', 'work-hours']
+    : ['analytics', 'chart']
 
   return (
+    <>
     <div className="min-h-screen pb-8" style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
       <div className="max-w-screen-sm mx-auto px-3 pt-3 space-y-3">
 
@@ -651,13 +757,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           </button>
         </div>
 
-        {/* Tabs: crm — input only; others see analytics and graph, admins also see input */}
+        {/* CRM management tabs are visible only to PIN 1505. */}
         {!isCrm && (
-          <div className="flex gap-2">
-            {(['analytics', 'chart', ...(isCrmAdmin || isCeo ? [] : ['input'])] as Tab[]).map(t => (
+          <div className={`grid gap-2 ${navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
+            {navigationTabs.map(t => (
               <button
                 key={t}
-                onClick={() => setTab(t as Tab)}
+                onClick={() => setTab(t)}
                 className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-[0.98]
                   backdrop-blur-md shadow-sm
                   ${tab === t
@@ -674,6 +780,28 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {/* ── INPUT TAB ──────────────────────────────────────────────────────── */}
         {tab === 'input' && (
           <>
+            {canManageCrm && (
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-blue-100 bg-gradient-to-br from-blue-50/90 to-white/80">
+                <label className="text-xs font-semibold uppercase tracking-wide text-blue-500 block mb-2">Працівник CRM</label>
+                <select
+                  value={selectedCrmUserId}
+                  disabled={loadingWorkers || crmWorkers.length === 0}
+                  onChange={e => {
+                    setSelectedCrmUserId(e.target.value)
+                    setEditingEntry(null)
+                  }}
+                  className="w-full rounded-xl border border-blue-200 bg-white px-3 py-3 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                >
+                  {loadingWorkers && <option>Завантаження…</option>}
+                  {!loadingWorkers && crmWorkers.length === 0 && <option>Працівників не знайдено</option>}
+                  {crmWorkers.map(worker => <option key={worker.id} value={worker.id}>{worker.name}</option>)}
+                </select>
+                <p className={`text-xs mt-2 ${workersError ? 'text-red-500' : 'text-gray-400'}`}>
+                  {workersError || 'Нові записи та зміни будуть зараховані обраному працівнику.'}
+                </p>
+              </div>
+            )}
+
             {/* Date picker */}
             <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -763,10 +891,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {/* Bonus card for admin/crm_admin — per-user breakdown */}
             {!isCrm && !loadingDay && (() => {
               // Admin/crm_admin: per-user bonus table
-              if (!dayData?.entries || dayData.entries.length === 0) return null
+              if (entries.length === 0) return null
               // Group by user
               const byUser: Record<string, { name: string; orders: number }> = {}
-              dayData.entries.forEach(e => {
+              entries.forEach(e => {
                 if (!byUser[e.user_id]) byUser[e.user_id] = { name: e.user_name, orders: 0 }
                 byUser[e.user_id].orders += e.orders_count
               })
@@ -797,7 +925,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Input form */}
             <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
-              <p className="text-sm font-semibold text-gray-700">Додати запис</p>
+              <p className="text-sm font-semibold text-gray-700">
+                {canManageCrm ? `Додати запис · ${crmWorkers.find(worker => worker.id === selectedCrmUserId)?.name ?? 'оберіть працівника'}` : 'Додати запис'}
+              </p>
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
@@ -840,12 +970,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             </div>
 
 
-            {/* Last 40 entries */}
-            {recentEntries.length > 0 && (
+            {/* Recent entries for the selected worker */}
+            {displayedInputEntries.length > 0 && (
               <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Останні записи</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  {canManageCrm ? `Записи за ${formatDisplayDate(selectedDate)}` : 'Останні записи'}
+                </p>
                 <div className="space-y-1.5">
-                  {recentEntries.map(e => {
+                  {displayedInputEntries.map(e => {
                     const bonus = calcBonus(e.orders_count, bonusSettings)
                     const dateStr = new Date(e.created_at).toLocaleString('uk-UA', {
                       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -881,20 +1013,23 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           <span className="text-xs text-gray-400 ml-1">од.</span>
                         </div>
 
-                        {/* Delete — hidden for crm role */}
-                        {!isCrm && (
-                          <button
-                            onClick={() => handleDelete(e.id)}
-                            disabled={deleting === e.id}
-                            className="text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40 ml-1 flex-shrink-0"
-                          >
-                            {deleting === e.id
-                              ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
-                              : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            }
-                          </button>
+                        {canManageCrm && (
+                          <div className="flex items-center gap-1 ml-1 flex-shrink-0">
+                            <button onClick={() => beginEditEntry(e)} className="w-7 h-7 rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50" aria-label="Редагувати запис">
+                              <svg className="w-3.5 h-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-6.414a2 2 0 112.828 2.828L11.828 18H9v-2.828l8.586-8.586z" /></svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(e.id)}
+                              disabled={deleting === e.id}
+                              className="w-7 h-7 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 disabled:opacity-40"
+                              aria-label="Видалити запис"
+                            >
+                              {deleting === e.id
+                                ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
+                                : <svg className="w-3.5 h-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              }
+                            </button>
+                          </div>
                         )}
                       </div>
                     )
@@ -903,6 +1038,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </div>
             )}
           </>
+        )}
+
+        {/* ── SUPER ADMIN WORK HOURS + MONTHLY DASHBOARD ───────────────────── */}
+        {tab === 'work-hours' && canManageCrm && (
+          <CrmWorkHours adminId={user.id} adminPin={user.pin} />
         )}
 
         {/* ── GRAPH TAB ──────────────────────────────────────────────────────── */}
@@ -1306,7 +1446,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 })()}
 
                 {/* Monthly bonus — crm_admin sees all users, crm sees own, ceo hidden */}
-                {monthlyBonus.length > 0 && !isCeo && (
+                {monthlyBonus.length > 0 && !isCeo && isAnalyticsCurrentPeriod && (
                   <div className="rounded-3xl shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm overflow-hidden">
                     <button
                       onClick={() => setShowMonthlyBonus(v => !v)}
@@ -1436,5 +1576,28 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         )}
       </div>
     </div>
+
+    {editingEntry && (
+      <div className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl border border-white">
+          <h2 className="text-xl font-extrabold text-gray-900">Редагувати запис</h2>
+          <p className="mt-1 text-sm text-gray-500">{editingEntry.user_name} · {new Date(editingEntry.created_at).toLocaleDateString('uk-UA')}</p>
+          <div className="mt-4 space-y-3">
+            <label className="text-xs font-medium text-gray-500 block">Кількість замовлень
+              <input value={editOrders} onChange={e => setEditOrders(e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </label>
+            <label className="text-xs font-medium text-gray-500 block">Кількість одиниць товару
+              <input value={editUnits} onChange={e => setEditUnits(e.target.value.replace(/\D/g, ''))} inputMode="numeric" className="mt-1 w-full rounded-xl border border-gray-200 px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            </label>
+          </div>
+          {submitError && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">{submitError}</p>}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => { setEditingEntry(null); setSubmitError('') }} className="rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-500">Скасувати</button>
+            <button onClick={handleUpdateEntry} disabled={savingEntry || !editOrders || !editUnits} className="rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white disabled:opacity-40">{savingEntry ? 'Збереження…' : 'Зберегти зміни'}</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

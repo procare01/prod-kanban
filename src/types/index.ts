@@ -122,6 +122,28 @@ export interface CrmAnalytics {
   monthly: { total_orders: number; total_units: number }
 }
 
+export interface CrmWorker {
+  id: string
+  name: string
+  role: 'crm' | 'crm_admin'
+}
+
+export interface CrmMonthDashboardRow {
+  user_id: string
+  user_name: string
+  total_orders: number
+  total_units: number
+  days_active: number
+  total_bonus: number
+  regular_hours: number
+  overtime_hours: number
+  overtime_coefficient: number
+  saturday_hours: number
+  saturdays_worked: number
+  saturday_coefficient: number
+  weighted_hours: number
+}
+
 export interface WorkSettings {
   work_start: string   // "HH:MM"
   work_end: string     // "HH:MM"
