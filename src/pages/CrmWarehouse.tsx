@@ -589,18 +589,19 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   // ── Submit entry ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (!orders && !units) return true
     const o = parseInt(orders, 10)
     const u = parseInt(units, 10)
     if (isNaN(o) || isNaN(u) || o < 0 || u < 0) {
       setSubmitError('Введіть коректні числа')
-      return
+      return false
     }
     setSubmitting(true)
     setSubmitError('')
     try {
       if (canManageCrm && !selectedCrmUserId) {
         setSubmitError('Оберіть працівника CRM')
-        return
+        return false
       }
       // For today — use real current time; for past dates — use noon Kyiv (10:00 UTC) to anchor to that date
       const todayStr = toDateInputValue(new Date())
@@ -630,8 +631,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       fetchDay(selectedDate)
       fetchRecent()
       fetchMonthlyBonus()
+      return true
     } catch {
       setSubmitError('Помилка збереження. Спробуйте ще раз.')
+      return false
     } finally {
       setSubmitting(false)
     }
@@ -830,106 +833,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               />
             </div>
 
-            {/* Quick stats */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/80 via-white/80 to-teal-50/60">
-                <p className="text-xs text-gray-400 mb-1">{isToday ? 'Замовлень сьогодні' : 'Замовлень за день'}</p>
-                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalOrders}</p>
-              </div>
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-blue-50/80 via-white/80 to-indigo-50/60">
-                <p className="text-xs text-gray-400 mb-1">Одиниць товару</p>
-                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalUnits}</p>
-              </div>
-            </div>
-
-            {/* Bonus row for crm: day bonus + monthly bonus side by side */}
-            {isCrm && !loadingDay && (() => {
-              const bonus = calcBonus(totalOrders, bonusSettings)
-              const monthBonus = monthlyBonus[0]?.total_bonus ?? 0
-              const now = new Date()
-              const mm = String(now.getMonth() + 1).padStart(2, '0')
-              const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-              return (
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Day bonus */}
-                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-start min-h-[96px]
-                    ${bonus > 0 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Бонус за день</p>
-                      <span className="text-lg">🏆</span>
-                    </div>
-                    <div>
-                      <p className={`text-3xl font-extrabold leading-none ${bonus > 0 ? 'text-amber-600' : 'text-gray-300'}`}>
-                        {bonus > 0 ? `${bonus}` : '—'}
-                      </p>
-                      {bonus > 0
-                        ? <p className="text-sm font-semibold text-amber-500 mt-0.5">грн</p>
-                        : <p className="text-xs text-gray-400 mt-1">від 80 замовл.</p>
-                      }
-                    </div>
-                  </div>
-                  {/* Monthly bonus */}
-                  <div className={`rounded-2xl p-4 shadow-sm border flex flex-col justify-start min-h-[96px]
-                    ${monthBonus > 0 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200' : 'bg-white border-gray-100'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">За місяць</p>
-                      <span className="text-lg">📅</span>
-                    </div>
-                    <div>
-                      <p className={`text-3xl font-extrabold leading-none ${monthBonus > 0 ? 'text-amber-600' : 'text-gray-300'}`}>
-                        {monthBonus > 0 ? `${monthBonus}` : '—'}
-                      </p>
-                      {monthBonus > 0
-                        ? <p className="text-sm font-semibold text-amber-500 mt-0.5">грн</p>
-                        : <p className="text-xs text-gray-400 mt-1">немає бонусів</p>
-                      }
-                      <p className="text-xs text-gray-300 mt-1">01.{mm}–{String(last).padStart(2,'0')}.{mm}</p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-
-            {/* Bonus card for admin/crm_admin — per-user breakdown */}
-            {!isCrm && !loadingDay && (() => {
-              // Admin/crm_admin: per-user bonus table
-              if (entries.length === 0) return null
-              // Group by user
-              const byUser: Record<string, { name: string; orders: number }> = {}
-              entries.forEach(e => {
-                if (!byUser[e.user_id]) byUser[e.user_id] = { name: e.user_name, orders: 0 }
-                byUser[e.user_id].orders += e.orders_count
-              })
-              const rows = Object.values(byUser).filter(u => u.orders > 0)
-              if (rows.length === 0) return null
-              return (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 shadow-sm">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">Бонуси за день</p>
-                  <div className="space-y-2">
-                    {rows.map(u => {
-                      const bonus = calcBonus(u.orders, bonusSettings)
-                      return (
-                        <div key={u.name} className="flex items-center justify-between text-sm">
-                          <div>
-                            <span className="font-medium text-gray-700">{u.name}</span>
-                            <span className="text-xs text-gray-400 ml-2">{u.orders} замовл.</span>
-                          </div>
-                          <span className={`font-bold ${bonus > 0 ? 'text-yellow-700' : 'text-gray-400'}`}>
-                            {bonus > 0 ? `${bonus} грн` : '—'}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })()}
-
             {/* Input form */}
             <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
-              <p className="text-sm font-semibold text-gray-700">
-                {canManageCrm ? `Додати запис · ${crmWorkers.find(worker => worker.id === selectedCrmUserId)?.name ?? 'оберіть працівника'}` : 'Додати запис'}
-              </p>
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
@@ -960,15 +865,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">Збережено успішно</p>
               )}
 
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || !orders || !units}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
-                           text-white font-semibold rounded-xl py-3 text-sm
-                           disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {submitting ? 'Збереження...' : `Зберегти за ${formatDisplayDate(selectedDate)}`}
-              </button>
             </div>
 
             <CrmWorkHours
@@ -978,69 +874,67 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               showDashboard={false}
               selectedDate={selectedDate}
               onSelectedDateChange={setSelectedDate}
+              targetUserId={canManageCrm ? selectedCrmUserId : user.id}
+              compact
+              onSaveOrder={handleSubmit}
             />
 
-            {/* Recent entries for the selected worker */}
-            {displayedInputEntries.length > 0 && (
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  {canManageCrm ? `Записи за ${formatDisplayDate(selectedDate)}` : 'Останні записи'}
-                </p>
+          </>
+        )}
+
+        {/* ── MONTHLY REVIEW ───────────────────────────────────────────────── */}
+        {tab === 'work-hours' && (canManageCrm || isCrm) && (
+          <>
+            <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} readOnly />
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/80 via-white/80 to-teal-50/60">
+                <p className="text-xs text-gray-400 mb-1">Замовлень сьогодні</p>
+                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalOrders}</p>
+              </div>
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-blue-50/80 via-white/80 to-indigo-50/60">
+                <p className="text-xs text-gray-400 mb-1">Одиниць товару</p>
+                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalUnits}</p>
+              </div>
+            </div>
+
+            {isCrm && !loadingDay && (() => {
+              const dayBonus = calcBonus(totalOrders, bonusSettings)
+              const monthBonus = monthlyBonus[0]?.total_bonus ?? 0
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 p-4 shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Бонус за день</p>
+                    <p className="mt-2 text-3xl font-extrabold text-amber-600">{dayBonus || '—'}</p>
+                    <p className="text-sm font-semibold text-amber-500">{dayBonus ? 'грн' : 'від 80 замовл.'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 p-4 shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">За місяць</p>
+                    <p className="mt-2 text-3xl font-extrabold text-amber-600">{monthBonus || '—'}</p>
+                    <p className="text-sm font-semibold text-amber-500">{monthBonus ? 'грн' : 'немає бонусів'}</p>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {visibleRecentEntries.length > 0 && (
+              <div className="rounded-3xl border border-white/80 bg-white/75 p-4 shadow-md">
+                <p className="mb-3 text-sm font-semibold text-gray-700">Останні записи</p>
                 <div className="space-y-1.5">
-                  {displayedInputEntries.map(e => {
-                    const bonus = calcBonus(e.orders_count, bonusSettings)
-                    const dateStr = new Date(e.created_at).toLocaleString('uk-UA', {
-                      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-                      timeZone: 'Europe/Kyiv'
+                  {visibleRecentEntries.map(entry => {
+                    const bonus = calcBonus(entry.orders_count, bonusSettings)
+                    const date = new Date(entry.created_at).toLocaleString('uk-UA', {
+                      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
                     })
                     return (
-                      <div key={e.id} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white rounded-2xl px-3 py-2.5">
-                        {/* Left: name + date */}
+                      <div key={entry.id} className="flex items-center gap-2 rounded-2xl border border-white bg-white/60 px-3 py-2.5">
                         <div className="flex-1 min-w-0">
-                          {isAdmin && (
-                            <p className="text-xs font-semibold text-emerald-700 truncate">{e.user_name}</p>
-                          )}
-                          <p className="text-xs text-gray-400">{dateStr}</p>
+                          {canManageCrm && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
+                          <p className="text-xs text-gray-400">{date}</p>
                         </div>
-
-                        {/* Bonus */}
-                        <div className="w-16 text-right">
-                          {bonus > 0
-                            ? <span className="text-sm font-bold text-amber-500">{bonus} грн</span>
-                            : <span className="text-xs text-gray-200">—</span>
-                          }
-                        </div>
-
-                        {/* Orders */}
-                        <div className="w-20 text-right">
-                          <span className="text-sm font-bold text-gray-800">{e.orders_count}</span>
-                          <span className="text-xs text-gray-400 ml-1">замовл.</span>
-                        </div>
-
-                        {/* Units */}
-                        <div className="w-20 text-right">
-                          <span className="text-sm font-bold text-gray-800">{e.units_count}</span>
-                          <span className="text-xs text-gray-400 ml-1">од.</span>
-                        </div>
-
-                        {canManageCrm && (
-                          <div className="flex items-center gap-1 ml-1 flex-shrink-0">
-                            <button onClick={() => beginEditEntry(e)} className="w-7 h-7 rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50" aria-label="Редагувати запис">
-                              <svg className="w-3.5 h-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-6.414a2 2 0 112.828 2.828L11.828 18H9v-2.828l8.586-8.586z" /></svg>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(e.id)}
-                              disabled={deleting === e.id}
-                              className="w-7 h-7 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 disabled:opacity-40"
-                              aria-label="Видалити запис"
-                            >
-                              {deleting === e.id
-                                ? <span className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin inline-block" />
-                                : <svg className="w-3.5 h-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                              }
-                            </button>
-                          </div>
-                        )}
+                        {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
+                        <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">замовл.</span></div>
+                        <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
                       </div>
                     )
                   })}
@@ -1048,11 +942,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               </div>
             )}
           </>
-        )}
-
-        {/* ── MONTHLY REVIEW ───────────────────────────────────────────────── */}
-        {tab === 'work-hours' && (canManageCrm || isCrm) && (
-          <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} readOnly />
         )}
 
         {/* ── GRAPH TAB ──────────────────────────────────────────────────────── */}

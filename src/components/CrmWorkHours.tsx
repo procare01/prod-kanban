@@ -10,6 +10,9 @@ interface Props {
   showDashboard?: boolean
   selectedDate?: string
   onSelectedDateChange?: (date: string) => void
+  targetUserId?: string
+  compact?: boolean
+  onSaveOrder?: () => Promise<boolean>
 }
 
 type HourDraft = {
@@ -54,7 +57,7 @@ function formatHours(value: number) {
 
 export function CrmWorkHours({
   userId, userPin, canManage, readOnly = false, showDashboard = true,
-  selectedDate: controlledDate, onSelectedDateChange,
+  selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder,
 }: Props) {
   const today = toDateValue(new Date())
   const [internalDate, setInternalDate] = useState(today)
@@ -123,6 +126,7 @@ export function CrmWorkHours({
     setSavedUserId(null)
     setError('')
     try {
+      if (onSaveOrder && !(await onSaveOrder())) return
       const { error: rpcError } = canManage
         ? await supabase.rpc('set_crm_work_hours', {
             p_admin_id: userId, p_admin_pin: userPin, p_user_id: targetUserId,
@@ -147,10 +151,11 @@ export function CrmWorkHours({
   }
 
   const selectedIsSaturday = new Date(`${selectedDate}T12:00:00`).getDay() === 6
+  const visibleDayRows = targetUserId ? dayRows.filter(row => row.user_id === targetUserId) : dayRows
 
   return (
     <div className="space-y-3">
-      <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
+      {!compact && <><div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
         <button onClick={() => setSelectedDate(shiftDay(selectedDate, -1))} className="w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600" aria-label="Попередній день">‹</button>
         <div className="text-center">
           <p className="text-xs uppercase tracking-wide text-gray-400">Облік за день</p>
@@ -160,6 +165,7 @@ export function CrmWorkHours({
       </div>
 
       <input type="date" value={selectedDate} max={today} onChange={e => setSelectedDate(e.target.value)} className="w-full rounded-2xl border border-white bg-white/75 px-4 py-3 text-sm text-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+      </>}
 
       {showDashboard && <div className="rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
@@ -199,11 +205,11 @@ export function CrmWorkHours({
             </div>
           ))}
         </div>
-      ) : dayRows.length === 0 ? (
+      ) : visibleDayRows.length === 0 ? (
         <div className="rounded-3xl bg-white/75 border border-white p-8 text-center text-sm text-gray-400">Немає працівників CRM</div>
       ) : (
         <div className="space-y-3">
-          {dayRows.map(row => {
+          {visibleDayRows.map(row => {
             const draft = drafts[row.user_id]
             const overtimeRate = numberValue(draft?.overtime_coefficient ?? '1.5')
             const saturdayRate = row.saturday_coefficient || 1
@@ -214,13 +220,13 @@ export function CrmWorkHours({
 
             return (
               <div key={row.user_id} className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/80">
-                <div className="flex items-start justify-between gap-3 mb-3">
+                {!compact && <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="font-bold text-gray-800">{row.user_name}</p>
                     <p className="text-xs text-gray-400">За місяць: {monthRow?.total_orders ?? 0} замовл. · {formatHours(monthRow?.weighted_hours ?? 0)} год</p>
                   </div>
                   {selectedIsSaturday && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Субота {row.saturday_number || 1} · ×{String(saturdayRate).replace('.', ',')}</span>}
-                </div>
+                </div>}
 
                 <div className="grid grid-cols-2 gap-2">
                   <label className="text-xs text-gray-500">Звичайні години
@@ -241,13 +247,13 @@ export function CrmWorkHours({
                   </label>
                 </div>
 
-                <div className="mt-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-center justify-between">
+                <div className={`mt-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-center ${compact ? 'justify-start' : 'justify-between'}`}>
                   <div><p className="text-xs text-gray-400">До оплати за день</p><p className="text-xl font-extrabold text-blue-700">{formatHours(calculatedHours)} год</p></div>
-                  <div className="text-right"><p className="text-xs text-gray-400">Бонус за місяць</p><p className="text-sm font-bold text-amber-600">{monthRow?.total_bonus ?? 0} грн</p></div>
+                  {!compact && <div className="text-right"><p className="text-xs text-gray-400">Бонус за місяць</p><p className="text-sm font-bold text-amber-600">{monthRow?.total_bonus ?? 0} грн</p></div>}
                 </div>
 
                 <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className="mt-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
-                  {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено ✓' : 'Зберегти години за день'}
+                  {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено ✓' : onSaveOrder ? 'Зберегти дані за день' : 'Зберегти години за день'}
                 </button>
               </div>
             )
