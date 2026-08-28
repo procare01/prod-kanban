@@ -933,8 +933,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           <p className="text-xs text-gray-400">{date}</p>
                         </div>
                         {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
-                        <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">замовл.</span></div>
+                        <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
                         <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
+                        <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
                       </div>
                     )
                   })}

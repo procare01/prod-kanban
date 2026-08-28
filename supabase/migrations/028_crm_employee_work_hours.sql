@@ -34,7 +34,7 @@ BEGIN
   IF p_date > CURRENT_DATE
      OR p_regular_hours < 0 OR p_overtime_hours < 0 OR p_saturday_hours < 0
      OR p_overtime_coefficient NOT IN (1.0, 1.2, 1.5, 2.0)
-     OR (EXTRACT(ISODOW FROM p_date) <> 6 AND p_saturday_hours <> 0) THEN
+     OR (EXTRACT(ISODOW FROM p_date) NOT IN (6, 7) AND p_saturday_hours <> 0) THEN
     RAISE EXCEPTION 'INVALID_CRM_WORK_HOURS';
   END IF;
 
@@ -74,7 +74,7 @@ BEGIN
       WHERE h.user_id = p_user_id
         AND h.work_date >= v_month_start
         AND h.work_date < p_date
-        AND EXTRACT(ISODOW FROM h.work_date) = 6
+        AND EXTRACT(ISODOW FROM h.work_date) IN (6, 7)
         AND h.saturday_hours > 0
     )
     SELECT COALESCE(json_agg(json_build_object(
@@ -85,9 +85,9 @@ BEGIN
       'overtime_hours', COALESCE(h.overtime_hours, 0),
       'overtime_coefficient', COALESCE(h.overtime_coefficient, 1.5),
       'saturday_hours', COALESCE(h.saturday_hours, 0),
-      'saturday_number', CASE WHEN EXTRACT(ISODOW FROM p_date) = 6 THEN ps.saturday_count + 1 ELSE 0 END,
+      'saturday_number', CASE WHEN EXTRACT(ISODOW FROM p_date) IN (6, 7) THEN ps.saturday_count + 1 ELSE 0 END,
       'saturday_coefficient', CASE
-        WHEN EXTRACT(ISODOW FROM p_date) <> 6 THEN 1.0
+        WHEN EXTRACT(ISODOW FROM p_date) NOT IN (6, 7) THEN 1.0
         WHEN ps.saturday_count >= 2 THEN 1.5 ELSE 1.2
       END,
       'weighted_hours', ROUND(
@@ -149,7 +149,7 @@ BEGIN
       SELECT h.work_date, ROW_NUMBER() OVER (ORDER BY h.work_date)::integer AS saturday_number
       FROM crm_work_hours_daily h
       WHERE h.user_id = p_user_id AND h.work_date BETWEEN v_month_start AND v_month_end
-        AND EXTRACT(ISODOW FROM h.work_date) = 6 AND h.saturday_hours > 0
+        AND EXTRACT(ISODOW FROM h.work_date) IN (6, 7) AND h.saturday_hours > 0
     ),
     hours AS (
       SELECT COALESCE(SUM(h.regular_hours), 0) AS regular_hours,

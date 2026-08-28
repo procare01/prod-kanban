@@ -90,12 +90,15 @@ export function CrmWorkHours({
       const nextDayRows = (dayResult.data ?? []) as CrmDailyWorkHoursRow[]
       setMonthRows(nextMonthRows)
       setDayRows(nextDayRows)
-      setDrafts(Object.fromEntries(nextDayRows.map(row => [row.user_id, {
-        regular_hours: String(row.regular_hours ?? 0),
-        overtime_hours: String(row.overtime_hours ?? 0),
-        overtime_coefficient: String(row.overtime_coefficient ?? 1.5),
-        saturday_hours: String(row.saturday_hours ?? 0),
-      }])))
+      setDrafts(Object.fromEntries(nextDayRows.map(row => {
+        const hasEnteredHours = Number(row.regular_hours) > 0 || Number(row.overtime_hours) > 0 || Number(row.saturday_hours) > 0
+        return [row.user_id, {
+          regular_hours: Number(row.regular_hours) > 0 ? String(row.regular_hours) : '',
+          overtime_hours: Number(row.overtime_hours) > 0 ? String(row.overtime_hours) : '',
+          overtime_coefficient: hasEnteredHours ? String(row.overtime_coefficient ?? 2) : '2',
+          saturday_hours: Number(row.saturday_hours) > 0 ? String(row.saturday_hours) : '',
+        }]
+      })))
     } catch {
       setMonthRows([])
       setDayRows([])
@@ -150,7 +153,7 @@ export function CrmWorkHours({
     }
   }
 
-  const selectedIsSaturday = new Date(`${selectedDate}T12:00:00`).getDay() === 6
+  const selectedIsWeekend = [0, 6].includes(new Date(`${selectedDate}T12:00:00`).getDay())
   const visibleDayRows = targetUserId ? dayRows.filter(row => row.user_id === targetUserId) : dayRows
 
   return (
@@ -211,7 +214,7 @@ export function CrmWorkHours({
         <div className="space-y-3">
           {visibleDayRows.map(row => {
             const draft = drafts[row.user_id]
-            const overtimeRate = numberValue(draft?.overtime_coefficient ?? '1.5')
+            const overtimeRate = numberValue(draft?.overtime_coefficient ?? '2')
             const saturdayRate = row.saturday_coefficient || 1
             const calculatedHours = numberValue(draft?.regular_hours ?? '0')
               + numberValue(draft?.overtime_hours ?? '0') * overtimeRate
@@ -225,23 +228,24 @@ export function CrmWorkHours({
                     <p className="font-bold text-gray-800">{row.user_name}</p>
                     <p className="text-xs text-gray-400">За місяць: {monthRow?.total_orders ?? 0} замовл. · {formatHours(monthRow?.weighted_hours ?? 0)} год</p>
                   </div>
-                  {selectedIsSaturday && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Субота {row.saturday_number || 1} · ×{String(saturdayRate).replace('.', ',')}</span>}
+                  {selectedIsWeekend && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Вихідний {row.saturday_number || 1} · ×{String(saturdayRate).replace('.', ',')}</span>}
                 </div>}
 
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="text-xs text-gray-500">Звичайні години
-                    <input value={draft?.regular_hours ?? ''} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                  </label>
-                  {selectedIsSaturday && (
-                    <label className="text-xs text-amber-700">Суботні години · ×{String(saturdayRate).replace('.', ',')}
-                      <input value={draft?.saturday_hours ?? ''} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" className="mt-1 h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_88px] items-end gap-2">
+                  {selectedIsWeekend ? (
+                    <label className="text-xs text-amber-700">Суботні години
+                      <input value={draft?.saturday_hours ?? ''} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                    </label>
+                  ) : (
+                    <label className="text-xs text-gray-500">Звичайні години
+                      <input value={draft?.regular_hours ?? ''} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                     </label>
                   )}
                   <label className="text-xs text-gray-500">Години переробки
-                    <input value={draft?.overtime_hours ?? ''} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                    <input value={draft?.overtime_hours ?? ''} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300" />
                   </label>
-                  <label className="text-xs text-gray-500">Коефіцієнт переробки
-                    <select value={draft?.overtime_coefficient ?? '1.5'} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                  <label className="text-[11px] text-gray-500">Коеф.
+                    <select value={draft?.overtime_coefficient ?? '2'} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-2 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
                       <option value="1">×1,0</option><option value="1.2">×1,2</option><option value="1.5">×1,5</option><option value="2">×2,0</option>
                     </select>
                   </label>

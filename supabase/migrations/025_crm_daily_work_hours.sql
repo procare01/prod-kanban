@@ -40,7 +40,7 @@ BEGIN
   IF p_date > CURRENT_DATE
      OR p_regular_hours < 0 OR p_overtime_hours < 0 OR p_saturday_hours < 0
      OR p_overtime_coefficient NOT IN (1.0, 1.2, 1.5, 2.0)
-     OR (EXTRACT(ISODOW FROM p_date) <> 6 AND p_saturday_hours <> 0)
+     OR (EXTRACT(ISODOW FROM p_date) NOT IN (6, 7) AND p_saturday_hours <> 0)
      OR NOT EXISTS (
        SELECT 1 FROM users WHERE id = p_user_id AND role = 'crm'
      ) THEN
@@ -84,7 +84,7 @@ BEGIN
       FROM crm_work_hours_daily h
       WHERE h.work_date >= v_month_start
         AND h.work_date < p_date
-        AND EXTRACT(ISODOW FROM h.work_date) = 6
+        AND EXTRACT(ISODOW FROM h.work_date) IN (6, 7)
         AND h.saturday_hours > 0
       GROUP BY h.user_id
     )
@@ -99,11 +99,11 @@ BEGIN
           'overtime_coefficient', COALESCE(h.overtime_coefficient, 1.5),
           'saturday_hours', COALESCE(h.saturday_hours, 0),
           'saturday_number', CASE
-            WHEN EXTRACT(ISODOW FROM p_date) = 6 THEN COALESCE(ps.saturday_count, 0) + 1
+            WHEN EXTRACT(ISODOW FROM p_date) IN (6, 7) THEN COALESCE(ps.saturday_count, 0) + 1
             ELSE 0
           END,
           'saturday_coefficient', CASE
-            WHEN EXTRACT(ISODOW FROM p_date) <> 6 THEN 1.0
+            WHEN EXTRACT(ISODOW FROM p_date) NOT IN (6, 7) THEN 1.0
             WHEN COALESCE(ps.saturday_count, 0) >= 2 THEN 1.5
             ELSE 1.2
           END,
@@ -111,7 +111,7 @@ BEGIN
             COALESCE(h.regular_hours, 0)
             + COALESCE(h.overtime_hours, 0) * COALESCE(h.overtime_coefficient, 1.5)
             + COALESCE(h.saturday_hours, 0) * CASE
-                WHEN EXTRACT(ISODOW FROM p_date) <> 6 THEN 1.0
+                WHEN EXTRACT(ISODOW FROM p_date) NOT IN (6, 7) THEN 1.0
                 WHEN COALESCE(ps.saturday_count, 0) >= 2 THEN 1.5
                 ELSE 1.2
               END,
@@ -186,7 +186,7 @@ BEGIN
         work_date,
         ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY work_date)::integer AS saturday_number
       FROM month_hours
-      WHERE EXTRACT(ISODOW FROM work_date) = 6 AND saturday_hours > 0
+      WHERE EXTRACT(ISODOW FROM work_date) IN (6, 7) AND saturday_hours > 0
     ),
     hours AS (
       SELECT

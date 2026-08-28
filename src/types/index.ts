@@ -85,6 +85,7 @@ export interface CrmEntry {
   orders_count: number
   units_count: number
   created_at: string
+  weighted_hours?: number
 }
 
 export interface CrmTodayData {
