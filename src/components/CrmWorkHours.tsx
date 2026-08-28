@@ -175,7 +175,7 @@ export function CrmWorkHours({
 
   return (
     <div className="space-y-3">
-      {!compact && <div className="rounded-3xl px-3 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center gap-2">
+      {!compact && canViewAll && <div className="rounded-3xl px-3 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center gap-2">
         <button onClick={() => setSelectedDate(shiftDay(selectedDate, -1))} className="w-10 h-10 shrink-0 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600" aria-label="Попередній день">‹</button>
         <div className="min-w-0 flex-1 text-center">
           <p className="text-xs uppercase tracking-wide text-gray-400">Облік за день</p>
