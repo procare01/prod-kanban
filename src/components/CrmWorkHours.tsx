@@ -91,11 +91,10 @@ export function CrmWorkHours({
       setMonthRows(nextMonthRows)
       setDayRows(nextDayRows)
       setDrafts(Object.fromEntries(nextDayRows.map(row => {
-        const hasEnteredHours = Number(row.regular_hours) > 0 || Number(row.overtime_hours) > 0 || Number(row.saturday_hours) > 0
         return [row.user_id, {
           regular_hours: Number(row.regular_hours) > 0 ? String(row.regular_hours) : '',
           overtime_hours: Number(row.overtime_hours) > 0 ? String(row.overtime_hours) : '',
-          overtime_coefficient: hasEnteredHours ? String(row.overtime_coefficient ?? 2) : '2',
+          overtime_coefficient: Number(row.overtime_hours) > 0 ? String(row.overtime_coefficient ?? 2) : '2',
           saturday_hours: Number(row.saturday_hours) > 0 ? String(row.saturday_hours) : '',
         }]
       })))
