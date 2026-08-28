@@ -295,6 +295,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const isCeo = user.role === 'ceo'
   const isSuperAdmin = user.role === 'super_admin'
   const canManageCrm = (isSuperAdmin || user.role === 'admin') && user.pin === '1505'
+  const canViewCrmHours = canManageCrm || user.role === 'crm_admin'
   const isAdminWithCrmAccess = isSuperAdmin ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
@@ -528,7 +529,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       const { data } = await supabase.rpc('get_crm_recent', {
         p_user_id: user.id,
         p_is_admin: isAdmin,
-        p_limit: 40,
+        p_limit: 250,
       })
       if (data) setRecentEntries(data as CrmEntry[])
     } catch {/* ignore */}
@@ -726,6 +727,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     ? ['input', 'work-hours']
     : canManageCrm
       ? ['analytics', 'chart', 'input', 'work-hours']
+      : user.role === 'crm_admin'
+        ? ['analytics', 'chart', 'work-hours']
       : ['analytics', 'chart']
 
   return (
@@ -883,9 +886,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         )}
 
         {/* ── MONTHLY REVIEW ───────────────────────────────────────────────── */}
-        {tab === 'work-hours' && (canManageCrm || isCrm) && (
+        {tab === 'work-hours' && (canViewCrmHours || isCrm) && (
           <>
-            <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} readOnly />
+            <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} canViewAll={canViewCrmHours} readOnly />
 
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/80 via-white/80 to-teal-50/60">
@@ -929,7 +932,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     return (
                       <div key={entry.id} className="flex items-center gap-2 rounded-2xl border border-white bg-white/60 px-3 py-2.5">
                         <div className="flex-1 min-w-0">
-                          {canManageCrm && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
+                          {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
                           <p className="text-xs text-gray-400">{date}</p>
                         </div>
                         {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}

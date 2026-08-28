@@ -6,6 +6,7 @@ interface Props {
   userId: string
   userPin: string
   canManage: boolean
+  canViewAll?: boolean
   readOnly?: boolean
   showDashboard?: boolean
   selectedDate?: string
@@ -56,7 +57,7 @@ function formatHours(value: number) {
 }
 
 export function CrmWorkHours({
-  userId, userPin, canManage, readOnly = false, showDashboard = true,
+  userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder,
 }: Props) {
   const today = toDateValue(new Date())
@@ -75,7 +76,7 @@ export function CrmWorkHours({
     setLoading(true)
     setError('')
     try {
-      const [monthResult, dayResult] = await Promise.all(canManage
+      const [monthResult, dayResult] = await Promise.all(canViewAll
         ? [
             supabase.rpc('get_crm_month_dashboard', { p_admin_id: userId, p_admin_pin: userPin, p_month: monthValue(selectedDate) }),
             supabase.rpc('get_crm_work_hours_day', { p_admin_id: userId, p_admin_pin: userPin, p_date: selectedDate }),
@@ -105,7 +106,7 @@ export function CrmWorkHours({
     } finally {
       setLoading(false)
     }
-  }, [userId, userPin, canManage, selectedDate])
+  }, [userId, userPin, canViewAll, selectedDate])
 
   useEffect(() => { load() }, [load])
 
@@ -172,10 +173,10 @@ export function CrmWorkHours({
       {showDashboard && <div className="rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <p className="text-xs text-blue-200 uppercase tracking-wide">{canManage ? 'Загальний дашборд' : 'Мій результат'}</p>
+            <p className="text-xs text-blue-200 uppercase tracking-wide">{canViewAll ? 'Загальний дашборд' : 'Мій результат'}</p>
             <h2 className="text-lg font-extrabold">Підсумок за {monthLabel(monthValue(selectedDate)).toLowerCase()}</h2>
           </div>
-          <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100">{canManage ? `${monthRows.length} працівн.` : 'Мої дані'}</span>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100">{canViewAll ? `${monthRows.length} працівн.` : 'Мої дані'}</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Замовлення</p><p className="text-2xl font-extrabold">{totals.orders}</p></div>
