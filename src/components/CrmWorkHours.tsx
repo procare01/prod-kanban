@@ -159,17 +159,15 @@ export function CrmWorkHours({
 
   return (
     <div className="space-y-3">
-      {!compact && <><div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
-        <button onClick={() => setSelectedDate(shiftDay(selectedDate, -1))} className="w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600" aria-label="Попередній день">‹</button>
-        <div className="text-center">
+      {!compact && <div className="rounded-3xl px-3 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center gap-2">
+        <button onClick={() => setSelectedDate(shiftDay(selectedDate, -1))} className="w-10 h-10 shrink-0 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600" aria-label="Попередній день">‹</button>
+        <div className="min-w-0 flex-1 text-center">
           <p className="text-xs uppercase tracking-wide text-gray-400">Облік за день</p>
-          <p className="text-sm font-bold text-gray-800 capitalize">{dateLabel(selectedDate)}</p>
+          <p className="truncate text-sm font-bold text-gray-800 capitalize">{dateLabel(selectedDate)}</p>
         </div>
-        <button onClick={() => setSelectedDate(shiftDay(selectedDate, 1))} disabled={selectedDate === today} className="w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600 disabled:opacity-30" aria-label="Наступний день">›</button>
-      </div>
-
-      <input type="date" value={selectedDate} max={today} onChange={e => setSelectedDate(e.target.value)} className="w-full rounded-2xl border border-white bg-white/75 px-4 py-3 text-sm text-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-      </>}
+        <input type="date" value={selectedDate} max={today} onChange={e => setSelectedDate(e.target.value)} className="h-10 w-32 shrink-0 rounded-xl border border-gray-200 bg-white px-2 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        <button onClick={() => setSelectedDate(shiftDay(selectedDate, 1))} disabled={selectedDate === today} className="w-10 h-10 shrink-0 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600 disabled:opacity-30" aria-label="Наступний день">›</button>
+      </div>}
 
       {showDashboard && <div className="rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
