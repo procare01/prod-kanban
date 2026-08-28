@@ -313,6 +313,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const canManageCrm = (isSuperAdmin || user.role === 'admin') && user.pin === '1505'
   const canViewCrmHours = canManageCrm || user.role === 'crm_admin'
   const canViewCrmRecords = isSuperAdmin || user.role === 'crm_admin'
+  const canEditRecentRecords = isSuperAdmin && canManageCrm
   const hideRecordTime = user.role === 'crm_admin'
   const isAdminWithCrmAccess = isSuperAdmin ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
@@ -339,6 +340,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [editOrders, setEditOrders] = useState('')
   const [editUnits, setEditUnits] = useState('')
   const [savingEntry, setSavingEntry] = useState(false)
+  const [editingHoursRecord, setEditingHoursRecord] = useState<CrmEntry | null>(null)
+  const [editRegularHours, setEditRegularHours] = useState('')
+  const [editOvertimeHours, setEditOvertimeHours] = useState('')
+  const [editOvertimeCoefficient, setEditOvertimeCoefficient] = useState('2')
+  const [editSaturdayHours, setEditSaturdayHours] = useState('')
 
   // Analytics date picker
   const [analyticsDate, setAnalyticsDate] = useState(toDateInputValue(new Date()))
@@ -687,8 +693,21 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     setSubmitError('')
   }
 
+  const beginEditRecentRecord = (entry: CrmEntry) => {
+    if (entry.record_type !== 'hours') {
+      beginEditEntry(entry)
+      return
+    }
+    setEditingHoursRecord(entry)
+    setEditRegularHours(Number(entry.regular_hours ?? 0) > 0 ? String(entry.regular_hours) : '')
+    setEditOvertimeHours(Number(entry.overtime_hours ?? 0) > 0 ? String(entry.overtime_hours) : '')
+    setEditOvertimeCoefficient(String(entry.overtime_coefficient ?? 2))
+    setEditSaturdayHours(Number(entry.saturday_hours ?? 0) > 0 ? String(entry.saturday_hours) : '')
+    setSubmitError('')
+  }
+
   const handleUpdateEntry = async () => {
-    if (!editingEntry || !canManageCrm) return
+    if (!editingEntry || !canEditRecentRecords) return
     const nextOrders = parseInt(editOrders, 10)
     const nextUnits = parseInt(editUnits, 10)
     if (Number.isNaN(nextOrders) || Number.isNaN(nextUnits) || nextOrders < 0 || nextUnits < 0) {
@@ -710,6 +729,39 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       await Promise.all([fetchDay(selectedDate), fetchRecent(), fetchMonthlyBonus()])
     } catch {
       setSubmitError('Не вдалося оновити запис')
+    } finally {
+      setSavingEntry(false)
+    }
+  }
+
+  const handleUpdateHoursRecord = async () => {
+    if (!editingHoursRecord || !canEditRecentRecords || !editingHoursRecord.work_date) return
+    const regularHours = Number(editRegularHours.replace(',', '.')) || 0
+    const overtimeHours = Number(editOvertimeHours.replace(',', '.')) || 0
+    const overtimeCoefficient = Number(editOvertimeCoefficient)
+    const saturdayHours = Number(editSaturdayHours.replace(',', '.')) || 0
+    if (regularHours < 0 || overtimeHours < 0 || saturdayHours < 0 || ![1, 1.2, 1.5, 2].includes(overtimeCoefficient)) {
+      setSubmitError('Введіть коректні години та коефіцієнт')
+      return
+    }
+    setSavingEntry(true)
+    setSubmitError('')
+    try {
+      const { error } = await supabase.rpc('set_crm_work_hours', {
+        p_admin_id: user.id,
+        p_admin_pin: user.pin,
+        p_user_id: editingHoursRecord.user_id,
+        p_date: editingHoursRecord.work_date,
+        p_regular_hours: regularHours,
+        p_overtime_hours: overtimeHours,
+        p_overtime_coefficient: overtimeCoefficient,
+        p_saturday_hours: saturdayHours,
+      })
+      if (error) throw error
+      setEditingHoursRecord(null)
+      await Promise.all([fetchDay(selectedDate), fetchRecent(), fetchMonthlyBonus()])
+    } catch {
+      setSubmitError('Не вдалося оновити години')
     } finally {
       setSavingEntry(false)
     }
@@ -1012,6 +1064,19 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                               <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
                               <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
                               <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
+                              {canEditRecentRecords && (
+                                <button
+                                  type="button"
+                                  onClick={() => beginEditRecentRecord(entry)}
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                  aria-label={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
+                                  title={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
+                                >
+                                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 2.651 2.651M4.5 19.5l4.131-.826L19.5 7.805l-2.651-2.651L5.98 16.023 4.5 19.5Z" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           )
                         })}
@@ -1575,6 +1640,41 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         </div>
       </div>
     )}
+    {editingHoursRecord && (() => {
+      const isWeekendRecord = [0, 6].includes(new Date(`${editingHoursRecord.work_date}T12:00:00`).getDay())
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl border border-white">
+            <h2 className="text-xl font-extrabold text-gray-900">Редагувати години</h2>
+            <p className="mt-1 text-sm text-gray-500">{editingHoursRecord.user_name} · {new Date(`${editingHoursRecord.work_date}T12:00:00`).toLocaleDateString('uk-UA')}</p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="text-xs font-medium text-gray-500 block">{isWeekendRecord ? 'Суботні години' : 'Звичайні години'}
+                <input
+                  value={isWeekendRecord ? editSaturdayHours : editRegularHours}
+                  onChange={e => (isWeekendRecord ? setEditSaturdayHours : setEditRegularHours)(e.target.value.replace(/[^\d.,]/g, ''))}
+                  inputMode="decimal"
+                  placeholder="0"
+                  className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </label>
+              <label className="text-xs font-medium text-gray-500 block">Години переробки
+                <input value={editOvertimeHours} onChange={e => setEditOvertimeHours(e.target.value.replace(/[^\d.,]/g, ''))} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </label>
+              <label className="text-xs font-medium text-gray-500 block">Коефіцієнт переробки
+                <select value={editOvertimeCoefficient} onChange={e => setEditOvertimeCoefficient(e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                  <option value="1">×1,0</option><option value="1.2">×1,2</option><option value="1.5">×1,5</option><option value="2">×2,0</option>
+                </select>
+              </label>
+            </div>
+            {submitError && <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">{submitError}</p>}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => { setEditingHoursRecord(null); setSubmitError('') }} className="rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-500">Скасувати</button>
+              <button onClick={handleUpdateHoursRecord} disabled={savingEntry} className="rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white disabled:opacity-40">{savingEntry ? 'Збереження…' : 'Зберегти зміни'}</button>
+            </div>
+          </div>
+        </div>
+      )
+    })()}
     </>
   )
 }

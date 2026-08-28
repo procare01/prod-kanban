@@ -80,11 +80,17 @@ export interface EventWithWebhook extends Event {
 
 export interface CrmEntry {
   id: string
+  record_type?: 'entry' | 'hours'
   user_id: string
   user_name: string
   orders_count: number
   units_count: number
   created_at: string
+  work_date?: string
+  regular_hours?: number
+  overtime_hours?: number
+  overtime_coefficient?: number
+  saturday_hours?: number
   weighted_hours?: number
 }
 
