@@ -142,6 +142,21 @@ interface BonusSettings { threshold: number; rate_mid: number; rate_high: number
 // e.g. 81 orders → 6 грн, 101 orders → 168 грн
 const DEFAULT_BONUS: BonusSettings = { threshold: 80, rate_mid: 6, rate_high: 8 }
 
+const CRM_WORKER_SURNAME_ORDER = ['яблонський', 'кулик', 'самардак', 'поліщук', 'сіренко', 'машталер']
+
+function sortCrmRowsByWorker<T extends { user_name: string }>(rows: T[]) {
+  const position = (name: string) => {
+    const normalizedName = name.toLocaleLowerCase('uk-UA')
+    const index = CRM_WORKER_SURNAME_ORDER.findIndex(surname => normalizedName.includes(surname))
+    return index === -1 ? CRM_WORKER_SURNAME_ORDER.length : index
+  }
+
+  return [...rows].sort((a, b) => {
+    const difference = position(a.user_name) - position(b.user_name)
+    return difference || a.user_name.localeCompare(b.user_name, 'uk-UA')
+  })
+}
+
 function calcBonus(orders: number, s: BonusSettings = DEFAULT_BONUS): number {
   if (orders <= s.threshold) return 0
   if (orders <= 100) return (orders - s.threshold) * s.rate_mid
@@ -298,6 +313,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const canManageCrm = (isSuperAdmin || user.role === 'admin') && user.pin === '1505'
   const canViewCrmHours = canManageCrm || user.role === 'crm_admin'
   const canViewCrmRecords = isSuperAdmin || user.role === 'crm_admin'
+  const hideRecordTime = user.role === 'crm_admin'
   const isAdminWithCrmAccess = isSuperAdmin ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
@@ -508,7 +524,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         })
       }))
 
-      setAnalyticsBonusRows(Object.values(byUser).sort((a, b) => b.bonus - a.bonus))
+      setAnalyticsBonusRows(sortCrmRowsByWorker(Object.values(byUser)))
     } catch {
       setAnalyticsBonusRows([])
     } finally {
@@ -975,11 +991,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         {group.label}
                       </p>
                       <div className="space-y-1.5">
-                        {group.entries.map(entry => {
+                        {sortCrmRowsByWorker(group.entries).map(entry => {
                           const bonus = calcBonus(entry.orders_count, bonusSettings)
-                          const date = new Date(entry.created_at).toLocaleString('uk-UA', {
-                            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
-                          })
+                          const entryDate = new Date(entry.created_at)
+                          const date = hideRecordTime
+                            ? entryDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv' })
+                            : entryDate.toLocaleString('uk-UA', {
+                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
+                              })
                           return (
                             <div
                               key={entry.id}
@@ -1163,7 +1182,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       byUser[e.user_id].orders += e.orders_count
                       byUser[e.user_id].units += e.units_count
                     })
-                    const rows = Object.values(byUser)
+                    const rows = sortCrmRowsByWorker(Object.values(byUser))
                     const maxO = Math.max(...rows.map(u => u.orders), 1)
                     const maxU = Math.max(...rows.map(u => u.units), 1)
                     return (
@@ -1222,7 +1241,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                   {/* === 7 ДНІВ / 1 МІСЯЦЬ === */}
                   {chartPeriod !== '1d' && analytics.by_user_today && (() => {
-                    const rows = analytics.by_user_today
+                    const rows = sortCrmRowsByWorker(analytics.by_user_today)
                     if (rows.length === 0) return <p className="text-sm text-gray-400 text-center py-4">Немає даних</p>
                     const totalO = rows.reduce((s, u) => s + u.total_orders, 0)
                     const totalU = rows.reduce((s, u) => s + u.total_units, 0)
@@ -1339,7 +1358,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
                 {/* Bonus table — crm_admin / admin 1505/7985, calculated for selected analytics period */}
                 {showBonusAsAdmin && (() => {
-                  const rows = analyticsBonusRows
+                  const rows = sortCrmRowsByWorker(analyticsBonusRows)
                   if (loadingAnalyticsBonus) return (
                     <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
                       <div className="flex items-center justify-between">
@@ -1431,7 +1450,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     {showMonthlyBonus && (
                       <div className="px-5 pb-5 space-y-2 border-t border-white/60">
                         <div className="pt-3 space-y-2">
-                          {monthlyBonus.map(u => (
+                          {sortCrmRowsByWorker(monthlyBonus).map(u => (
                             <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
                               <div>
                                 {showBonusAsAdmin && <p className="text-base font-semibold text-gray-800">{u.user_name}</p>}
