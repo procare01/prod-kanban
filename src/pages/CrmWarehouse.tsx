@@ -719,6 +719,40 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     return recentEntries
   }, [canManageCrm, recentEntries, selectedCrmUserId])
 
+  const recentEntryGroups = useMemo(() => {
+    const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit',
+    })
+    const dateLabelFormatter = new Intl.DateTimeFormat('uk-UA', {
+      timeZone: 'Europe/Kyiv', weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    })
+    const weekendFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Kyiv', weekday: 'short',
+    })
+    const groups = new Map<string, { label: string; isWeekend: boolean; entries: CrmEntry[] }>()
+
+    visibleRecentEntries.forEach(entry => {
+      const entryDate = new Date(entry.created_at)
+      const key = dateKeyFormatter.format(entryDate)
+      const weekday = weekendFormatter.format(entryDate)
+      const group = groups.get(key)
+
+      if (group) {
+        group.entries.push(entry)
+        return
+      }
+
+      const label = dateLabelFormatter.format(entryDate)
+      groups.set(key, {
+        label: label.charAt(0).toUpperCase() + label.slice(1),
+        isWeekend: weekday === 'Sat' || weekday === 'Sun',
+        entries: [entry],
+      })
+    })
+
+    return Array.from(groups.entries()).map(([key, group]) => ({ key, ...group }))
+  }, [visibleRecentEntries])
+
   const displayedInputEntries = canManageCrm ? entries : visibleRecentEntries
 
   const totalOrders = entries.reduce((s, e) => s + e.orders_count, 0)
@@ -923,25 +957,40 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {visibleRecentEntries.length > 0 && (
               <div className="rounded-3xl border border-white/80 bg-white/75 p-4 shadow-md">
                 <p className="mb-3 text-sm font-semibold text-gray-700">Останні записи</p>
-                <div className="space-y-1.5">
-                  {visibleRecentEntries.map(entry => {
-                    const bonus = calcBonus(entry.orders_count, bonusSettings)
-                    const date = new Date(entry.created_at).toLocaleString('uk-UA', {
-                      day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
-                    })
-                    return (
-                      <div key={entry.id} className="flex items-center gap-2 rounded-2xl border border-white bg-white/60 px-3 py-2.5">
-                        <div className="flex-1 min-w-0">
-                          {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
-                          <p className="text-xs text-gray-400">{date}</p>
-                        </div>
-                        {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
-                        <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
-                        <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
-                        <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
+                <div className="space-y-3">
+                  {recentEntryGroups.map(group => (
+                    <section
+                      key={group.key}
+                      className={group.isWeekend ? 'rounded-2xl border border-amber-200 bg-amber-50/80 p-2' : ''}
+                    >
+                      <p className={`mb-1 px-1 text-xs font-semibold ${group.isWeekend ? 'text-amber-800' : 'text-gray-500'}`}>
+                        {group.label}
+                      </p>
+                      <div className="space-y-1.5">
+                        {group.entries.map(entry => {
+                          const bonus = calcBonus(entry.orders_count, bonusSettings)
+                          const date = new Date(entry.created_at).toLocaleString('uk-UA', {
+                            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
+                          })
+                          return (
+                            <div
+                              key={entry.id}
+                              className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
+                                <p className="text-xs text-gray-400">{date}</p>
+                              </div>
+                              {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
+                              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
+                              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
+                              <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    )
-                  })}
+                    </section>
+                  ))}
                 </div>
               </div>
             )}
