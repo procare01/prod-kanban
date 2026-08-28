@@ -23,6 +23,21 @@ type HourDraft = {
   saturday_hours: string
 }
 
+const CRM_WORKER_SURNAME_ORDER = ['яблонський', 'кулик', 'самардак', 'поліщук', 'сіренко', 'машталер']
+
+function sortCrmWorkerRows<T extends { user_name: string }>(rows: T[]) {
+  const position = (name: string) => {
+    const normalizedName = name.toLocaleLowerCase('uk-UA')
+    const index = CRM_WORKER_SURNAME_ORDER.findIndex(surname => normalizedName.includes(surname))
+    return index === -1 ? CRM_WORKER_SURNAME_ORDER.length : index
+  }
+
+  return [...rows].sort((a, b) => {
+    const difference = position(a.user_name) - position(b.user_name)
+    return difference || a.user_name.localeCompare(b.user_name, 'uk-UA')
+  })
+}
+
 function toDateValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -89,8 +104,8 @@ export function CrmWorkHours({
       if (dayResult.error) throw dayResult.error
       const nextMonthRows = (monthResult.data ?? []) as CrmMonthDashboardRow[]
       const nextDayRows = (dayResult.data ?? []) as CrmDailyWorkHoursRow[]
-      setMonthRows(nextMonthRows)
-      setDayRows(nextDayRows)
+      setMonthRows(sortCrmWorkerRows(nextMonthRows))
+      setDayRows(sortCrmWorkerRows(nextDayRows))
       const isWeekend = [0, 6].includes(new Date(`${selectedDate}T12:00:00`).getDay())
       setDrafts(Object.fromEntries(nextDayRows.map(row => {
         return [row.user_id, {
