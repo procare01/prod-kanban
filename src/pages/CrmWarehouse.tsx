@@ -131,8 +131,8 @@ function isCurrentAnalyticsPeriod(days: number, date: string) {
 function getTabLabel(tab: Tab) {
   if (tab === 'analytics') return 'Аналітика'
   if (tab === 'chart') return 'Графік'
-  if (tab === 'work-hours') return 'Перегляд'
-  if (tab === 'records') return 'Записи'
+  if (tab === 'work-hours') return 'Звіт'
+  if (tab === 'records') return 'Перегляд'
   return 'Введення даних'
 }
 
