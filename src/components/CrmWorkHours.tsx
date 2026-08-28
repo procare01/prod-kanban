@@ -91,9 +91,10 @@ export function CrmWorkHours({
       const nextDayRows = (dayResult.data ?? []) as CrmDailyWorkHoursRow[]
       setMonthRows(nextMonthRows)
       setDayRows(nextDayRows)
+      const isWeekend = [0, 6].includes(new Date(`${selectedDate}T12:00:00`).getDay())
       setDrafts(Object.fromEntries(nextDayRows.map(row => {
         return [row.user_id, {
-          regular_hours: Number(row.regular_hours) > 0 ? String(row.regular_hours) : '',
+          regular_hours: isWeekend ? '' : Number(row.regular_hours) > 0 ? String(row.regular_hours) : '8',
           overtime_hours: Number(row.overtime_hours) > 0 ? String(row.overtime_hours) : '',
           overtime_coefficient: Number(row.overtime_hours) > 0 ? String(row.overtime_coefficient ?? 2) : '2',
           saturday_hours: Number(row.saturday_hours) > 0 ? String(row.saturday_hours) : '',
