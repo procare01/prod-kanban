@@ -961,9 +961,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   {recentEntryGroups.map(group => (
                     <section
                       key={group.key}
-                      className={group.isWeekend ? 'rounded-2xl border border-amber-200 bg-amber-50/80 p-2' : ''}
+                      className={`rounded-2xl border p-2 ${group.isWeekend ? 'border-amber-400' : 'border-slate-400/90'}`}
                     >
-                      <p className={`mb-1 px-1 text-xs font-semibold ${group.isWeekend ? 'text-amber-800' : 'text-gray-500'}`}>
+                      <p className={`mb-1 rounded-lg px-2 py-1 text-xs font-semibold ${group.isWeekend ? 'bg-amber-200 text-amber-800' : 'bg-slate-200 text-gray-600'}`}>
                         {group.label}
                       </p>
                       <div className="space-y-1.5">
