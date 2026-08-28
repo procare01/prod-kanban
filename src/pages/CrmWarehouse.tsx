@@ -9,7 +9,7 @@ interface Props {
   onLogout: () => void
 }
 
-type Tab = 'input' | 'analytics' | 'chart' | 'work-hours'
+type Tab = 'input' | 'analytics' | 'chart' | 'work-hours' | 'records'
 type ChartPeriod = '1d' | '7d' | '30d'
 type CrmBonusRow = { user_id: string; user_name: string; orders: number; bonus: number; days_active: number }
 
@@ -132,6 +132,7 @@ function getTabLabel(tab: Tab) {
   if (tab === 'analytics') return 'Аналітика'
   if (tab === 'chart') return 'Графік'
   if (tab === 'work-hours') return 'Перегляд'
+  if (tab === 'records') return 'Записи'
   return 'Введення даних'
 }
 
@@ -296,6 +297,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const isSuperAdmin = user.role === 'super_admin'
   const canManageCrm = (isSuperAdmin || user.role === 'admin') && user.pin === '1505'
   const canViewCrmHours = canManageCrm || user.role === 'crm_admin'
+  const canViewCrmRecords = isSuperAdmin || user.role === 'crm_admin'
   const isAdminWithCrmAccess = isSuperAdmin ||
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
@@ -760,10 +762,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const navigationTabs: Tab[] = isCrm
     ? ['input', 'work-hours']
     : canManageCrm
-      ? ['analytics', 'chart', 'input', 'work-hours']
+      ? isSuperAdmin
+        ? ['analytics', 'chart', 'input', 'work-hours', 'records']
+        : ['analytics', 'chart', 'input', 'work-hours']
       : user.role === 'crm_admin'
-        ? ['analytics', 'chart', 'work-hours']
-      : ['analytics', 'chart']
+        ? ['analytics', 'chart', 'work-hours', 'records']
+        : ['analytics', 'chart']
 
   return (
     <>
@@ -801,7 +805,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
         {/* CRM працівник бачить введення своїх даних і власні робочі години. */}
         {
-          <div className={`grid gap-2 ${navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2 ${navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
             {navigationTabs.map(t => (
               <button
                 key={t}
@@ -954,7 +958,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               )
             })()}
 
-            {visibleRecentEntries.length > 0 && (
+          </>
+        )}
+
+        {/* ── RECORDS ─────────────────────────────────────────────────────── */}
+        {tab === 'records' && canViewCrmRecords && visibleRecentEntries.length > 0 && (
               <div className="rounded-3xl border border-white/80 bg-white/75 p-4 shadow-md">
                 <p className="mb-3 text-sm font-semibold text-gray-700">Останні записи</p>
                 <div className="space-y-3">
@@ -993,8 +1001,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   ))}
                 </div>
               </div>
-            )}
-          </>
         )}
 
         {/* ── GRAPH TAB ──────────────────────────────────────────────────────── */}
