@@ -162,14 +162,14 @@ export function CrmWorkHours({
 
   return (
     <div className="space-y-3">
-      {showDashboard && <div className="rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
+      {showDashboard && <div className="crm-hours-dashboard rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg font-extrabold">Підсумок за {monthLabel(monthValue(selectedDate)).toLowerCase()}</h2>
           </div>
           <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100">{canViewAll ? `${monthRows.length} працівн.` : 'Мої дані'}</span>
         </div>
-        <div className={`grid gap-2 ${isDimaKulyk ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        <div className={`crm-hours-dashboard-metrics ${isDimaKulyk ? 'crm-hours-dashboard-metrics--personal' : ''} grid gap-2 ${isDimaKulyk ? 'grid-cols-1' : 'grid-cols-2'}`}>
           {!isDimaKulyk && <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Замовлення</p><p className="text-2xl font-extrabold">{totals.orders}</p></div>}
           {!isDimaKulyk && <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Одиниці</p><p className="text-2xl font-extrabold">{totals.units}</p></div>}
           {!isDimaKulyk && <div className="rounded-2xl bg-amber-400/15 p-3"><p className="text-xs text-amber-200">Бонуси</p><p className="text-2xl font-extrabold text-amber-300">{totals.bonus} грн</p></div>}
@@ -182,9 +182,9 @@ export function CrmWorkHours({
       {loading ? (
         <div className="rounded-3xl bg-white/75 border border-white p-8 flex justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : readOnly ? (
-        <div className="space-y-3">
+        <div className="crm-hours-month-list space-y-3">
           {monthRows.map(row => (
-            <div key={row.user_id} className="rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
+            <div key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-gray-800">{row.user_name}</p>

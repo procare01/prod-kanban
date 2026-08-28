@@ -143,70 +143,129 @@
     opacity: 0.95;
   }
 
-  @media (min-width: 1024px) {
-    .crm-desktop-theme {
-      background:
-        radial-gradient(circle at 7% 10%, rgba(96, 165, 250, 0.20), transparent 31rem),
-        radial-gradient(circle at 94% 7%, rgba(110, 231, 183, 0.22), transparent 27rem),
-        linear-gradient(135deg, #eef6ff 0%, #f9fcff 46%, #f2fbf5 100%) !important;
-    }
+  .crm-modern-theme {
+    --crm-ink: #25283d;
+    --crm-muted: #8a94a8;
+    --crm-border: rgba(255, 255, 255, 0.86);
+    --crm-surface: rgba(255, 255, 255, 0.78);
+    color: var(--crm-ink);
+    background:
+      radial-gradient(circle at 5% 2%, rgba(172, 207, 250, 0.55), transparent 27rem),
+      radial-gradient(circle at 96% 4%, rgba(179, 238, 215, 0.50), transparent 25rem),
+      linear-gradient(145deg, #eaf4ff 0%, #f8fbff 48%, #eef9f4 100%) !important;
+  }
 
-    .crm-desktop-theme .crm-content {
-      padding: 1.5rem 2rem 3rem;
+  .crm-modern-theme .crm-content {
+    padding: 0.75rem 0.75rem 2rem;
+    gap: 0.75rem;
+  }
+
+  .crm-modern-theme .crm-header {
+    min-height: 4.5rem;
+    border: 1.5px solid rgba(87, 211, 166, 0.72);
+    background: linear-gradient(110deg, rgba(239, 253, 248, 0.94), rgba(255, 255, 255, 0.88));
+    box-shadow: 0 16px 38px rgba(41, 55, 83, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  }
+
+  .crm-modern-theme .crm-header .w-8 {
+    background: rgba(204, 249, 231, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  }
+
+  .crm-modern-theme .crm-navigation {
+    gap: 0.5rem;
+    padding: 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: 0 12px 30px rgba(41, 55, 83, 0.07);
+    backdrop-filter: blur(18px);
+  }
+
+  .crm-modern-theme .crm-navigation button {
+    min-height: 3.25rem;
+    border-radius: 1rem;
+  }
+
+  .crm-modern-theme .rounded-3xl {
+    border-color: var(--crm-border);
+    box-shadow: 0 14px 34px rgba(41, 55, 83, 0.075);
+  }
+
+  .crm-modern-theme input,
+  .crm-modern-theme select {
+    min-height: 3rem;
+    border-color: rgba(205, 214, 228, 0.78);
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+
+  .crm-modern-theme .crm-hours-dashboard {
+    background: linear-gradient(135deg, #252c48 0%, #30375f 52%, #313459 100%);
+  }
+
+  @media (min-width: 1024px) {
+    .crm-modern-theme .crm-content {
+      padding: 1.5rem 1.5rem 3rem;
       gap: 1rem;
     }
 
-    .crm-desktop-theme .crm-header {
-      min-height: 5.5rem;
-      border: 2px solid rgba(52, 211, 153, 0.68);
-      background: linear-gradient(105deg, rgba(236, 253, 245, 0.96), rgba(255, 255, 255, 0.94));
-      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    .crm-modern-theme .crm-header {
+      min-height: 4.75rem;
     }
 
-    .crm-desktop-theme .crm-header > div:first-child {
+    .crm-modern-theme .crm-header > div:first-child {
       gap: 0.9rem;
     }
 
-    .crm-desktop-theme .crm-header .w-8 {
+    .crm-modern-theme .crm-header .w-8 {
       width: 3rem;
       height: 3rem;
       border-radius: 1rem;
     }
 
-    .crm-desktop-theme .crm-navigation {
-      gap: 0.75rem;
-      padding: 0.55rem;
-      border: 1px solid rgba(203, 213, 225, 0.78);
-      border-radius: 1.5rem;
-      background: rgba(255, 255, 255, 0.62);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    .crm-modern-theme .crm-navigation {
+      gap: 0.7rem;
+      padding: 0.5rem;
     }
 
-    .crm-desktop-theme .crm-navigation--2 {
+    .crm-modern-theme .crm-navigation--2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .crm-desktop-theme .crm-navigation--4 {
+    .crm-modern-theme .crm-navigation--4 {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-    .crm-desktop-theme .crm-navigation--5 {
+    .crm-modern-theme .crm-navigation--5 {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
-    .crm-desktop-theme .crm-navigation button {
-      min-height: 3.7rem;
-      border-radius: 1rem;
+    .crm-modern-theme .crm-navigation button {
+      min-height: 3.5rem;
       font-size: 0.9rem;
     }
 
-    .crm-desktop-theme .rounded-3xl {
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+    .crm-modern-theme .crm-hours-dashboard {
+      padding: 1.25rem 1.5rem;
     }
 
-    .crm-desktop-theme input,
-    .crm-desktop-theme select {
-      min-height: 3rem;
+    .crm-modern-theme .crm-hours-dashboard-metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .crm-modern-theme .crm-hours-dashboard-metrics--personal {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .crm-modern-theme .crm-hours-month-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .crm-modern-theme .crm-hours-month-card {
+      min-height: 9.5rem;
+      padding: 1.25rem;
     }
   }
 }

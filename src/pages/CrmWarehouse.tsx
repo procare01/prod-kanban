@@ -137,7 +137,11 @@ function getTabLabel(tab: Tab) {
 }
 
 // ─── Bonus calculation ────────────────────────────────────────────────────────
-interface BonusSettings { threshold: number; rate_mid: number; rate_high: number }
+interface BonusSettings {
+  threshold: number
+  rate_mid: number
+  rate_high: number
+}
 // threshold=80: ≤80 → 0, 81–100 → (orders−80)×rate_mid, 101+ → (orders−80)×rate_high
 // e.g. 81 orders → 6 грн, 101 orders → 168 грн
 const DEFAULT_BONUS: BonusSettings = { threshold: 80, rate_mid: 6, rate_high: 8 }
@@ -181,13 +185,13 @@ function MiniBarChart({ data, color, label }: {
       <defs>
         {color === 'emerald' ? (
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#86efac" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#14532d" stopOpacity="0.95" />
+            <stop offset="0%" stopColor="#9cebc5" stopOpacity="0.96" />
+            <stop offset="100%" stopColor="#24765b" stopOpacity="0.98" />
           </linearGradient>
         ) : (
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#3b0764" stopOpacity="0.95" />
+            <stop offset="0%" stopColor="#c7dcff" stopOpacity="0.96" />
+            <stop offset="100%" stopColor="#7067a8" stopOpacity="0.98" />
           </linearGradient>
         )}
       </defs>
@@ -204,9 +208,9 @@ function MiniBarChart({ data, color, label }: {
 // ─── KPI bar ──────────────────────────────────────────────────────────────────
 function KpiBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
-  const gradient = color === '#10b981'
-    ? 'linear-gradient(90deg, #86efac 0%, #16a34a 40%, #14532d 100%)'
-    : 'linear-gradient(90deg, #bfdbfe 0%, #6d28d9 40%, #3b0764 100%)'
+  const gradient = color === '#35b779'
+    ? 'linear-gradient(90deg, #9cebc5 0%, #35b779 48%, #24765b 100%)'
+    : 'linear-gradient(90deg, #c7dcff 0%, #9091dc 48%, #7067a8 100%)'
   return (
     <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
       <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: gradient }} />
@@ -266,19 +270,19 @@ function SmoothOrdersChart({ data }: { data: CrmDailyPoint[] }) {
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="ordersLineGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="55%" stopColor="#0ea5e9" />
-              <stop offset="100%" stopColor="#2563eb" />
+              <stop offset="0%" stopColor="#35b779" />
+              <stop offset="55%" stopColor="#5aa9a5" />
+              <stop offset="100%" stopColor="#7b7fca" />
             </linearGradient>
             <linearGradient id="ordersAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#67d6aa" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#9eb8e8" stopOpacity="0.03" />
             </linearGradient>
           </defs>
 
           {grid.map((g, i) => (
             <g key={i}>
-              <line x1={PAD_X} x2={W - PAD_X} y1={g.y} y2={g.y} stroke="#dbeafe" strokeWidth="1" strokeDasharray="4 5" />
+              <line x1={PAD_X} x2={W - PAD_X} y1={g.y} y2={g.y} stroke="#dfe6ef" strokeWidth="1" strokeDasharray="4 5" />
               <text x={PAD_X - 8} y={g.y + 4} textAnchor="end" className="fill-gray-400" fontSize="11">{g.value}</text>
             </g>
           ))}
@@ -369,7 +373,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [editRateHigh, setEditRateHigh] = useState('')
   const [savingRates, setSavingRates] = useState(false)
   const [showBonusSettings, setShowBonusSettings] = useState(false)
-  const [isDesktopTheme, setIsDesktopTheme] = useState(() => localStorage.getItem('crm-desktop-theme') === 'enabled')
+  const [isModernTheme, setIsModernTheme] = useState(false)
+  const [savingTheme, setSavingTheme] = useState(false)
   const [showMonthlyBonus, setShowMonthlyBonus] = useState(false)
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
@@ -381,10 +386,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [graphError, setGraphError] = useState('')
 
   const isToday = selectedDate === toDateInputValue(new Date())
-
-  useEffect(() => {
-    localStorage.setItem('crm-desktop-theme', isDesktopTheme ? 'enabled' : 'disabled')
-  }, [isDesktopTheme])
 
   // ── Fetch entries for selected date ─────────────────────────────────────────
   const fetchDay = useCallback(async (date: string) => {
@@ -569,11 +570,20 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     try {
       const { data } = await supabase.rpc('get_crm_bonus_settings')
       if (data) {
-        setBonusSettings(data as BonusSettings)
-        setEditRateMid(String((data as BonusSettings).rate_mid))
-        setEditRateHigh(String((data as BonusSettings).rate_high))
+        const settings = data as BonusSettings
+        setBonusSettings(settings)
+        setEditRateMid(String(settings.rate_mid))
+        setEditRateHigh(String(settings.rate_high))
       }
     } catch {/* ignore */}
+  }, [])
+
+  const fetchModernTheme = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_crm_modern_theme')
+      if (error) throw error
+      setIsModernTheme(Boolean(data))
+    } catch {/* keep the current theme until the next refresh */}
   }, [])
 
   const fetchCrmWorkers = useCallback(async () => {
@@ -604,6 +614,16 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   }, [tab, canViewCrmRecords, fetchRecent])
   useEffect(() => { fetchMonthlyBonus() }, [fetchMonthlyBonus])
   useEffect(() => { fetchBonusSettings() }, [fetchBonusSettings])
+  useEffect(() => {
+    fetchModernTheme()
+    const refreshTheme = () => fetchModernTheme()
+    const intervalId = window.setInterval(refreshTheme, 30_000)
+    window.addEventListener('focus', refreshTheme)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshTheme)
+    }
+  }, [fetchModernTheme])
   useEffect(() => {
     if (tab === 'input' && canManageCrm) fetchCrmWorkers()
   }, [tab, canManageCrm, fetchCrmWorkers])
@@ -843,16 +863,16 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     ? ['input', 'work-hours']
     : canManageCrm
       ? isSuperAdmin
-        ? ['analytics', 'chart', 'input', 'work-hours', 'records']
+        ? ['analytics', 'chart', 'input', 'records', 'work-hours']
         : ['analytics', 'chart', 'input', 'work-hours']
       : user.role === 'crm_admin'
-        ? ['analytics', 'chart', 'work-hours', 'records']
+        ? ['analytics', 'chart', 'records', 'work-hours']
         : ['analytics', 'chart']
 
   return (
     <>
-    <div className={`min-h-screen pb-8 ${isDesktopTheme ? 'crm-desktop-theme' : ''}`} style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
-      <div className={`${isDesktopTheme ? 'max-w-[1440px]' : 'max-w-screen-sm'} crm-content mx-auto px-3 pt-3 space-y-3`}>
+    <div className={`min-h-screen pb-8 ${isModernTheme ? 'crm-modern-theme' : ''}`} style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
+      <div className={`${isModernTheme ? 'max-w-[1180px]' : 'max-w-screen-sm'} crm-content mx-auto px-3 pt-3 space-y-3`}>
 
         {/* Header */}
         <div className="crm-header rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
@@ -956,7 +976,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
             {/* Input form */}
             {!isDimaKulyk && (
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
+              <div className="crm-input-form rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
@@ -1282,14 +1302,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                       <span>Замовлень/год</span>
                                       <span className="font-semibold text-emerald-600">{(u.orders / 8).toFixed(1)}</span>
                                     </div>
-                                    <KpiBar value={u.orders} max={maxO} color="#10b981" />
+                                    <KpiBar value={u.orders} max={maxO} color="#35b779" />
                                   </div>
                                   <div>
                                     <div className="flex justify-between text-xs text-gray-400">
                                       <span>Одиниць/год</span>
                                       <span className="font-semibold text-blue-600">{(u.units / 8).toFixed(1)}</span>
                                     </div>
-                                    <KpiBar value={u.units} max={maxU} color="#3b82f6" />
+                                    <KpiBar value={u.units} max={maxU} color="#7b7fca" />
                                   </div>
                                 </div>
                               </div>
@@ -1344,14 +1364,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                     <span>Замовлень/год</span>
                                     <span className="font-semibold text-emerald-600">{u.orders_per_hour.toFixed(1)}</span>
                                   </div>
-                                  <KpiBar value={u.total_orders} max={maxO} color="#10b981" />
+                                  <KpiBar value={u.total_orders} max={maxO} color="#35b779" />
                                 </div>
                                 <div>
                                   <div className="flex justify-between text-xs text-gray-400">
                                     <span>Одиниць/год</span>
                                     <span className="font-semibold text-blue-600">{u.units_per_hour.toFixed(1)}</span>
                                   </div>
-                                  <KpiBar value={u.total_units} max={maxU} color="#3b82f6" />
+                                  <KpiBar value={u.total_units} max={maxU} color="#7b7fca" />
                                 </div>
                               </div>
                             </div>
@@ -1562,19 +1582,34 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 </button>
                 {showBonusSettings && (
                   <div className="px-4 pb-4 space-y-3 border-t border-gray-100/80">
-                    <div className="pt-3 flex items-center justify-between gap-3">
+                    {isSuperAdmin && <div className="pt-3 flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-gray-700">Нова Desktop CRM тема</p>
-                        <p className="text-xs text-gray-400">Широкий і зручніший вигляд для комп’ютера</p>
+                        <p className="text-sm font-semibold text-gray-700">Нова CRM тема</p>
+                        <p className="text-xs text-gray-400">Єдиний вигляд для всіх працівників на мобільному та desktop</p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setIsDesktopTheme(value => !value)}
-                        className={`shrink-0 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${isDesktopTheme ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        disabled={savingTheme}
+                        onClick={async () => {
+                          const enabled = !isModernTheme
+                          setSavingTheme(true)
+                          try {
+                            const { error } = await supabase.rpc('set_crm_modern_theme', {
+                              p_admin_id: user.id,
+                              p_admin_pin: user.pin,
+                              p_enabled: enabled,
+                            })
+                            if (error) throw error
+                            setIsModernTheme(enabled)
+                          } catch {/* ignore */} finally {
+                            setSavingTheme(false)
+                          }
+                        }}
+                        className={`shrink-0 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${isModernTheme ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                       >
-                        {isDesktopTheme ? 'Увімкнено' : 'Увімкнути'}
+                        {savingTheme ? 'Збереження…' : isModernTheme ? 'Увімкнено' : 'Увімкнути'}
                       </button>
-                    </div>
+                    </div>}
                     <div className="pt-3">
                       <label className="text-xs text-gray-400 mb-1 block">
                         Ставка за 1 замовлення (80–100)
