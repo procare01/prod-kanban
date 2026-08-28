@@ -42,19 +42,7 @@ function toDateValue(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-function shiftDay(value: string, direction: -1 | 1) {
-  const [year, month, day] = value.split('-').map(Number)
-  return toDateValue(new Date(year, month - 1, day + direction))
-}
-
 function monthValue(value: string) { return `${value.slice(0, 7)}-01` }
-
-function dateLabel(value: string) {
-  const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('uk-UA', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
-}
 
 function monthLabel(value: string) {
   const [year, month] = value.split('-').map(Number)
@@ -76,9 +64,8 @@ export function CrmWorkHours({
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder,
 }: Props) {
   const today = toDateValue(new Date())
-  const [internalDate, setInternalDate] = useState(today)
+  const [internalDate] = useState(today)
   const selectedDate = controlledDate ?? internalDate
-  const setSelectedDate = onSelectedDateChange ?? setInternalDate
   const [monthRows, setMonthRows] = useState<CrmMonthDashboardRow[]>([])
   const [dayRows, setDayRows] = useState<CrmDailyWorkHoursRow[]>([])
   const [drafts, setDrafts] = useState<Record<string, HourDraft>>({})
@@ -175,16 +162,6 @@ export function CrmWorkHours({
 
   return (
     <div className="space-y-3">
-      {!compact && canViewAll && <div className="rounded-3xl px-3 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center gap-2">
-        <button onClick={() => setSelectedDate(shiftDay(selectedDate, -1))} className="w-10 h-10 shrink-0 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600" aria-label="Попередній день">‹</button>
-        <div className="min-w-0 flex-1 text-center">
-          <p className="text-xs uppercase tracking-wide text-gray-400">Облік за день</p>
-          <p className="truncate text-sm font-bold text-gray-800 capitalize">{dateLabel(selectedDate)}</p>
-        </div>
-        <input type="date" value={selectedDate} max={today} onChange={e => setSelectedDate(e.target.value)} className="h-10 w-32 shrink-0 rounded-xl border border-gray-200 bg-white px-2 text-xs text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-300" />
-        <button onClick={() => setSelectedDate(shiftDay(selectedDate, 1))} disabled={selectedDate === today} className="w-10 h-10 shrink-0 rounded-xl border border-gray-200 bg-white text-gray-500 hover:text-blue-600 disabled:opacity-30" aria-label="Наступний день">›</button>
-      </div>}
-
       {showDashboard && <div className="rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
