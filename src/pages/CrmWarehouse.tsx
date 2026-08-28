@@ -375,6 +375,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [showBonusSettings, setShowBonusSettings] = useState(false)
   const [isModernTheme, setIsModernTheme] = useState(false)
   const [savingTheme, setSavingTheme] = useState(false)
+  const [showEmployeeBonuses, setShowEmployeeBonuses] = useState(false)
   const [showMonthlyBonus, setShowMonthlyBonus] = useState(false)
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
@@ -1234,10 +1235,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 {/* KPI block — switches by chartPeriod */}
                 <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
                   {/* Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <p className="text-sm font-semibold text-gray-700">
-                      {getKpiPeriodLabel(chartPeriod, isAnalyticsToday, analyticsDate)}
-                    </p>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <p className="text-sm font-semibold text-gray-700">
+                        {getKpiPeriodLabel(chartPeriod, isAnalyticsToday, analyticsDate)}
+                      </p>
+                      <div className="crm-analytics-total flex items-baseline gap-3 text-sm tabular-nums">
+                        <span className="font-semibold text-gray-500">Всього</span>
+                        <span><span className="text-lg font-bold text-emerald-700">{chartPeriod === '1d' ? (analyticsDayData?.total_orders ?? 0) : (analytics.by_user_today?.reduce((sum, user) => sum + user.total_orders, 0) ?? 0)}</span><span className="ml-1 text-xs text-gray-400">замовл.</span></span>
+                        <span><span className="text-lg font-bold text-blue-700">{chartPeriod === '1d' ? (analyticsDayData?.total_units ?? 0) : (analytics.by_user_today?.reduce((sum, user) => sum + user.total_units, 0) ?? 0)}</span><span className="ml-1 text-xs text-gray-400">од.</span></span>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setAnalyticsDate(prev => shiftAnalyticsDate(prev, chartPeriod, -1))}
@@ -1275,26 +1283,28 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     const maxU = Math.max(...rows.map(u => u.units), 1)
                     return (
                       <>
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
+                        <div className="crm-analytics-kpi-grid grid grid-cols-2 gap-2 mb-2">
+                          <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
-                            <p className="text-3xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
-                            <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_orders}</p>
+                            <p className="text-2xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Всього: {analyticsDayData.total_orders}</p>
                           </div>
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
+                          <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
-                            <p className="text-3xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
-                            <p className="text-sm text-gray-400 mt-1">Всього: {analyticsDayData.total_units}</p>
+                            <p className="text-2xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Всього: {analyticsDayData.total_units}</p>
                           </div>
                         </div>
                         {rows.length > 0 && (
-                          <div className="space-y-3">
+                          <div className="crm-analytics-worker-list space-y-3">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                             {rows.map(u => (
-                              <div key={u.user_id} className="rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
+                              <div key={u.user_id} className="crm-analytics-worker-card rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                  <span className="text-xs text-gray-400">{u.orders} замовл. · {u.units} од.</span>
+                                  <span className="text-sm text-slate-500 tabular-nums">
+                                    <span className="text-base font-bold text-slate-700">{u.orders}</span> замовл. · <span className="text-base font-bold text-slate-700">{u.units}</span> од.
+                                  </span>
                                 </div>
                                 <div className="space-y-1.5">
                                   <div>
@@ -1314,13 +1324,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                                 </div>
                               </div>
                             ))}
-                            <div className="mt-2 flex items-center justify-between rounded-2xl px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/80">
-                              <span className="text-base font-bold text-gray-600">Всього</span>
-                              <div className="flex items-center gap-4">
-                                <span><span className="text-2xl font-bold text-emerald-700">{rows.reduce((s, u) => s + u.orders, 0)}</span><span className="text-sm text-gray-400 ml-1">замовл.</span></span>
-                                <span><span className="text-2xl font-bold text-blue-700">{rows.reduce((s, u) => s + u.units, 0)}</span><span className="text-sm text-gray-400 ml-1">од.</span></span>
-                              </div>
-                            </div>
                           </div>
                         )}
                       </>
@@ -1338,25 +1341,27 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     const maxU = Math.max(...rows.map(u => u.total_units), 1)
                     return (
                       <>
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
+                        <div className="crm-analytics-kpi-grid grid grid-cols-2 gap-2 mb-2">
+                          <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
-                            <p className="text-3xl font-extrabold text-emerald-700">{(totalO / (days * 8)).toFixed(1)}</p>
-                            <p className="text-sm text-gray-400 mt-1">Всього: {totalO}</p>
+                            <p className="text-2xl font-extrabold text-emerald-700">{(totalO / (days * 8)).toFixed(1)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Всього: {totalO}</p>
                           </div>
-                          <div className="rounded-2xl p-4 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
+                          <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
                             <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
-                            <p className="text-3xl font-extrabold text-blue-700">{(totalU / (days * 8)).toFixed(1)}</p>
-                            <p className="text-sm text-gray-400 mt-1">Всього: {totalU}</p>
+                            <p className="text-2xl font-extrabold text-blue-700">{(totalU / (days * 8)).toFixed(1)}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Всього: {totalU}</p>
                           </div>
                         </div>
-                        <div className="space-y-3">
+                        <div className="crm-analytics-worker-list space-y-3">
                           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                           {rows.map(u => (
-                            <div key={u.user_id} className="rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
+                            <div key={u.user_id} className="crm-analytics-worker-card rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
                               <div className="flex items-center justify-between mb-2">
                                 <p className="text-sm font-semibold text-gray-700">{u.user_name}</p>
-                                <span className="text-xs text-gray-400">{u.total_orders} замовл. · {u.total_units} од.</span>
+                                <span className="text-sm text-slate-500 tabular-nums">
+                                  <span className="text-base font-bold text-slate-700">{u.total_orders}</span> замовл. · <span className="text-base font-bold text-slate-700">{u.total_units}</span> од.
+                                </span>
                               </div>
                               <div className="space-y-1.5">
                                 <div>
@@ -1376,13 +1381,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                               </div>
                             </div>
                           ))}
-                          <div className="mt-2 flex items-center justify-between rounded-2xl px-4 py-3 bg-white/60 backdrop-blur-sm border border-white/80">
-                            <span className="text-base font-bold text-gray-600">Всього</span>
-                            <div className="flex items-center gap-4">
-                              <span><span className="text-2xl font-bold text-emerald-700">{totalO}</span><span className="text-sm text-gray-400 ml-1">замовл.</span></span>
-                              <span><span className="text-2xl font-bold text-blue-700">{totalU}</span><span className="text-sm text-gray-400 ml-1">од.</span></span>
-                            </div>
-                          </div>
                         </div>
                       </>
                     )
@@ -1444,6 +1442,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )}
                 </div>}
 
+                <div className="crm-analytics-accordions space-y-3">
                 {/* Bonus table — crm_admin / admin 1505/7985, calculated for selected analytics period */}
                 {showBonusAsAdmin && (() => {
                   const rows = sortCrmRowsByWorker(analyticsBonusRows)
@@ -1475,18 +1474,29 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )
                   const totalBonus = rows.reduce((s, u) => s + u.bonus, 0)
                   return (
-                    <div className="rounded-3xl p-5 shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
+                    <div className="rounded-3xl shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm overflow-hidden">
+                      <button
+                        onClick={() => setShowEmployeeBonuses(value => !value)}
+                        className="crm-analytics-accordion-header w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+                      >
+                        <div className="crm-analytics-accordion-heading flex min-w-0 items-center gap-2">
                           <span className="text-amber-500">🎁</span>
                           <div>
-                            <p className="text-sm font-semibold text-gray-700">Бонуси співробітників</p>
+                            <p className="truncate text-sm font-semibold text-gray-700">Бонуси співробітників</p>
                             <p className="text-xs text-gray-400">{getPeriodRangeLabel(chartPeriod, analyticsDate)}</p>
                           </div>
                         </div>
-                        <span className="text-sm font-extrabold text-amber-600">Всього: {totalBonus} грн</span>
-                      </div>
-                      <div className="space-y-2">
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="crm-analytics-accordion-total text-sm font-extrabold text-amber-600">Всього: {totalBonus} грн</span>
+                          <svg
+                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showEmployeeBonuses ? 'rotate-180' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </button>
+                      {showEmployeeBonuses && <div className="crm-employee-bonus-list space-y-2 border-t border-white/70 px-5 py-4">
                         {rows.map(u => {
                           return (
                             <div key={u.user_id} className="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white shadow-sm">
@@ -1505,7 +1515,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                             </div>
                           )
                         })}
-                      </div>
+                      </div>}
                     </div>
                   )
                 })()}
@@ -1515,15 +1525,15 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   <div className="rounded-3xl shadow-md bg-gradient-to-br from-cyan-50 via-white to-blue-50 border border-white/60 backdrop-blur-sm overflow-hidden">
                     <button
                       onClick={() => setShowMonthlyBonus(v => !v)}
-                      className="w-full flex items-center justify-between px-5 py-3.5 text-left"
+                      className="crm-analytics-accordion-header w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="crm-analytics-accordion-heading flex min-w-0 items-center gap-2">
                         <span className="text-amber-500">📅</span>
                         <p className="text-sm font-semibold text-gray-700">Бонуси за місяць</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
                         {showBonusAsAdmin && (
-                          <span className="text-sm font-extrabold text-amber-600">
+                          <span className="crm-analytics-accordion-total text-sm font-extrabold text-amber-600">
                             {monthlyBonus.reduce((s, u) => s + u.total_bonus, 0)} грн
                           </span>
                         )}
@@ -1559,19 +1569,16 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     )}
                   </div>
                 )}
-              </>
-            )}
-
             {/* Bonus rate settings — admin 1505 / crm_admin */}
             {showBonusAsAdmin && (
               <div className="rounded-3xl shadow-md backdrop-blur-sm border border-white/80 bg-white/75 overflow-hidden">
                 <button
                   onClick={() => setShowBonusSettings(v => !v)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+                  className="crm-analytics-accordion-header w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="crm-analytics-accordion-heading flex min-w-0 items-center gap-2">
                     <span className="text-gray-500">⚙️</span>
-                    <p className="text-sm font-semibold text-gray-700">Налаштування ставок бонусу</p>
+                    <p className="truncate text-sm font-semibold text-gray-700">Налаштування ставок бонусу</p>
                   </div>
                   <svg
                     className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showBonusSettings ? 'rotate-180' : ''}`}
@@ -1664,6 +1671,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   </div>
                 )}
               </div>
+            )}
+              </div>
+            </>
             )}
           </>
         )}
