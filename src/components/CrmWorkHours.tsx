@@ -187,7 +187,6 @@ export function CrmWorkHours({
       {showDashboard && <div className="rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <p className="text-xs text-blue-200 uppercase tracking-wide">{canViewAll ? 'Загальний дашборд' : 'Мій результат'}</p>
             <h2 className="text-lg font-extrabold">Підсумок за {monthLabel(monthValue(selectedDate)).toLowerCase()}</h2>
           </div>
           <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100">{canViewAll ? `${monthRows.length} працівн.` : 'Мої дані'}</span>

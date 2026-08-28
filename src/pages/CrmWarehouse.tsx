@@ -310,6 +310,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const isCrm = user.role === 'crm'
   const isCeo = user.role === 'ceo'
   const isSuperAdmin = user.role === 'super_admin'
+  const isDimaKulyk = user.name === 'Діма Кулик'
   const canManageCrm = (isSuperAdmin || user.role === 'admin') && user.pin === '1505'
   const canViewCrmHours = canManageCrm || user.role === 'crm_admin'
   const canViewCrmRecords = isSuperAdmin || user.role === 'crm_admin'
@@ -944,38 +945,39 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             </div>
 
             {/* Input form */}
-            <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
-                  <input
-                    type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
-                    onChange={e => setOrders(e.target.value.replace(/\D/g, ''))} placeholder="0"
-                    className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
-                               focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                               text-gray-800 placeholder-gray-300 text-base"
-                  />
+            {!isDimaKulyk && (
+              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
+                    <input
+                      type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
+                      onChange={e => setOrders(e.target.value.replace(/\D/g, ''))} placeholder="0"
+                      className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
+                                 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
+                                 text-gray-800 placeholder-gray-300 text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
+                    <input
+                      type="text" inputMode="numeric" pattern="[0-9]*" value={units}
+                      onChange={e => setUnits(e.target.value.replace(/\D/g, ''))} placeholder="0"
+                      className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
+                                 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
+                                 text-gray-800 placeholder-gray-300 text-base"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
-                  <input
-                    type="text" inputMode="numeric" pattern="[0-9]*" value={units}
-                    onChange={e => setUnits(e.target.value.replace(/\D/g, ''))} placeholder="0"
-                    className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
-                               focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                               text-gray-800 placeholder-gray-300 text-base"
-                  />
-                </div>
+
+                {submitError && (
+                  <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{submitError}</p>
+                )}
+                {submitSuccess && (
+                  <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">Збережено успішно</p>
+                )}
               </div>
-
-              {submitError && (
-                <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">{submitError}</p>
-              )}
-              {submitSuccess && (
-                <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">Збережено успішно</p>
-              )}
-
-            </div>
+            )}
 
             <CrmWorkHours
               userId={user.id}
