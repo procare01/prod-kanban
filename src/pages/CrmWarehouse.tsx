@@ -999,7 +999,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           <>
             <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} canViewAll={canViewCrmHours} readOnly />
 
-            {isCrm && !loadingDay && (() => {
+            {isCrm && !isDimaKulyk && !loadingDay && (() => {
               const dayBonus = calcBonus(totalOrders, bonusSettings)
               const monthBonus = monthlyBonus[0]?.total_bonus ?? 0
               return (

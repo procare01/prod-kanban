@@ -132,6 +132,7 @@ export function CrmWorkHours({
     bonus: acc.bonus + Number(row.total_bonus || 0),
     hours: acc.hours + Number(row.weighted_hours || 0),
   }), { orders: 0, units: 0, bonus: 0, hours: 0 }), [monthRows])
+  const isDimaKulyk = !canViewAll && monthRows[0]?.user_name === 'Діма Кулик'
 
   const updateDraft = (userId: string, field: keyof HourDraft, value: string) => {
     const sanitized = field === 'overtime_coefficient' ? value : value.replace(/[^\d.,]/g, '')
@@ -191,10 +192,10 @@ export function CrmWorkHours({
           </div>
           <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-blue-100">{canViewAll ? `${monthRows.length} працівн.` : 'Мої дані'}</span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Замовлення</p><p className="text-2xl font-extrabold">{totals.orders}</p></div>
-          <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Одиниці</p><p className="text-2xl font-extrabold">{totals.units}</p></div>
-          <div className="rounded-2xl bg-amber-400/15 p-3"><p className="text-xs text-amber-200">Бонуси</p><p className="text-2xl font-extrabold text-amber-300">{totals.bonus} грн</p></div>
+        <div className={`grid gap-2 ${isDimaKulyk ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {!isDimaKulyk && <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Замовлення</p><p className="text-2xl font-extrabold">{totals.orders}</p></div>}
+          {!isDimaKulyk && <div className="rounded-2xl bg-white/10 p-3"><p className="text-xs text-blue-200">Одиниці</p><p className="text-2xl font-extrabold">{totals.units}</p></div>}
+          {!isDimaKulyk && <div className="rounded-2xl bg-amber-400/15 p-3"><p className="text-xs text-amber-200">Бонуси</p><p className="text-2xl font-extrabold text-amber-300">{totals.bonus} грн</p></div>}
           <div className="rounded-2xl bg-emerald-400/15 p-3"><p className="text-xs text-emerald-200">Оплачувані години</p><p className="text-2xl font-extrabold text-emerald-300">{formatHours(totals.hours)}</p></div>
         </div>
       </div>}
@@ -214,8 +215,8 @@ export function CrmWorkHours({
                 </div>
                 <p className="text-lg font-extrabold text-blue-700">{formatHours(row.weighted_hours)} год</p>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-700">Бонус: <span className="font-bold">{row.total_bonus} грн</span></div>
+              <div className={`mt-3 grid gap-2 text-sm ${isDimaKulyk ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {!isDimaKulyk && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-700">Бонус: <span className="font-bold">{row.total_bonus} грн</span></div>}
                 <div className="rounded-xl bg-emerald-50 px-3 py-2 text-emerald-700">Звичайні: <span className="font-bold">{formatHours(row.regular_hours)} год</span></div>
               </div>
             </div>
