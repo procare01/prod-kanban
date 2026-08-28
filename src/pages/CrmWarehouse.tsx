@@ -581,7 +581,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       if (error) throw error
       const workers = (data ?? []) as CrmWorker[]
       setCrmWorkers(workers)
-      setSelectedCrmUserId(current => current || workers[0]?.id || '')
+      const defaultWorker = workers.find(worker => worker.name.includes('Яблонський')) ?? workers[0]
+      setSelectedCrmUserId(current => current || defaultWorker?.id || '')
     } catch {
       setWorkersError('Не вдалося завантажити працівників CRM')
     } finally {
