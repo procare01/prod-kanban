@@ -369,6 +369,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [editRateHigh, setEditRateHigh] = useState('')
   const [savingRates, setSavingRates] = useState(false)
   const [showBonusSettings, setShowBonusSettings] = useState(false)
+  const [isDesktopTheme, setIsDesktopTheme] = useState(() => localStorage.getItem('crm-desktop-theme') === 'enabled')
   const [showMonthlyBonus, setShowMonthlyBonus] = useState(false)
   const [loadingDay, setLoadingDay] = useState(true)
   const [loadingAnalytics, setLoadingAnalytics] = useState(false)
@@ -380,6 +381,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [graphError, setGraphError] = useState('')
 
   const isToday = selectedDate === toDateInputValue(new Date())
+
+  useEffect(() => {
+    localStorage.setItem('crm-desktop-theme', isDesktopTheme ? 'enabled' : 'disabled')
+  }, [isDesktopTheme])
 
   // ── Fetch entries for selected date ─────────────────────────────────────────
   const fetchDay = useCallback(async (date: string) => {
@@ -594,6 +599,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
 
   useEffect(() => { fetchRecent() }, [fetchRecent])
+  useEffect(() => {
+    if (tab === 'records' && canViewCrmRecords) fetchRecent()
+  }, [tab, canViewCrmRecords, fetchRecent])
   useEffect(() => { fetchMonthlyBonus() }, [fetchMonthlyBonus])
   useEffect(() => { fetchBonusSettings() }, [fetchBonusSettings])
   useEffect(() => {
@@ -785,11 +793,13 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   }, [dayData, canManageCrm, selectedCrmUserId, isAdmin, user.id])
 
   const visibleRecentEntries = useMemo(() => {
-    if (canManageCrm && selectedCrmUserId) {
+    // The employee selector belongs to data entry only. The "Перегляд"
+    // tab must always show the complete shared record list for its roles.
+    if (tab === 'input' && canManageCrm && selectedCrmUserId) {
       return recentEntries.filter(entry => entry.user_id === selectedCrmUserId)
     }
     return recentEntries
-  }, [canManageCrm, recentEntries, selectedCrmUserId])
+  }, [tab, canManageCrm, recentEntries, selectedCrmUserId])
 
   const recentEntryGroups = useMemo(() => {
     const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
@@ -841,11 +851,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   return (
     <>
-    <div className="min-h-screen pb-8" style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
-      <div className="max-w-screen-sm mx-auto px-3 pt-3 space-y-3">
+    <div className={`min-h-screen pb-8 ${isDesktopTheme ? 'crm-desktop-theme' : ''}`} style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
+      <div className={`${isDesktopTheme ? 'max-w-[1440px]' : 'max-w-screen-sm'} crm-content mx-auto px-3 pt-3 space-y-3`}>
 
         {/* Header */}
-        <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
+        <div className="crm-header rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 mr-1">
@@ -875,7 +885,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
         {/* CRM працівник бачить введення своїх даних і власні робочі години. */}
         {
-          <div className={`grid gap-2 ${navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
+          <div className={`crm-navigation crm-navigation--${navigationTabs.length} grid gap-2 ${navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
             {navigationTabs.map(t => (
               <button
                 key={t}
@@ -1552,6 +1562,19 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 </button>
                 {showBonusSettings && (
                   <div className="px-4 pb-4 space-y-3 border-t border-gray-100/80">
+                    <div className="pt-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Нова Desktop CRM тема</p>
+                        <p className="text-xs text-gray-400">Широкий і зручніший вигляд для комп’ютера</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsDesktopTheme(value => !value)}
+                        className={`shrink-0 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${isDesktopTheme ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        {isDesktopTheme ? 'Увімкнено' : 'Увімкнути'}
+                      </button>
+                    </div>
                     <div className="pt-3">
                       <label className="text-xs text-gray-400 mb-1 block">
                         Ставка за 1 замовлення (80–100)
