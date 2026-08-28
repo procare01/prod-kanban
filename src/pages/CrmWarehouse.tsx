@@ -997,17 +997,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           <>
             <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} canViewAll={canViewCrmHours} readOnly />
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/80 via-white/80 to-teal-50/60">
-                <p className="text-xs text-gray-400 mb-1">Замовлень сьогодні</p>
-                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalOrders}</p>
-              </div>
-              <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-blue-50/80 via-white/80 to-indigo-50/60">
-                <p className="text-xs text-gray-400 mb-1">Одиниць товару</p>
-                <p className="text-2xl font-bold text-gray-800">{loadingDay ? '—' : totalUnits}</p>
-              </div>
-            </div>
-
             {isCrm && !loadingDay && (() => {
               const dayBonus = calcBonus(totalOrders, bonusSettings)
               const monthBonus = monthlyBonus[0]?.total_bonus ?? 0
@@ -1046,6 +1035,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <div className="space-y-1.5">
                         {sortCrmRowsByWorker(group.entries).map(entry => {
                           const bonus = calcBonus(entry.orders_count, bonusSettings)
+                          const hasMoreThanEightHours = Number(entry.weighted_hours ?? 0) > 8
                           const entryDate = new Date(entry.created_at)
                           const date = hideRecordTime
                             ? entryDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv' })
@@ -1055,7 +1045,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                           return (
                             <div
                               key={entry.id}
-                              className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
+                              className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${hasMoreThanEightHours ? 'border-pink-200 bg-pink-50/80' : group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
                             >
                               <div className="flex-1 min-w-0">
                                 {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
