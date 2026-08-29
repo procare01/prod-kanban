@@ -14,6 +14,7 @@ interface Props {
   targetUserId?: string
   compact?: boolean
   onSaveOrder?: () => Promise<boolean>
+  canEditSelectedDate?: boolean
 }
 
 type HourDraft = {
@@ -61,11 +62,12 @@ function formatHours(value: number) {
 
 export function CrmWorkHours({
   userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
-  selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder,
+  selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder, canEditSelectedDate = true,
 }: Props) {
   const today = toDateValue(new Date())
   const [internalDate] = useState(today)
   const selectedDate = controlledDate ?? internalDate
+  const isDayEditable = canManage || canEditSelectedDate
   const [monthRows, setMonthRows] = useState<CrmMonthDashboardRow[]>([])
   const [dayRows, setDayRows] = useState<CrmDailyWorkHoursRow[]>([])
   const [drafts, setDrafts] = useState<Record<string, HourDraft>>({})
@@ -122,11 +124,13 @@ export function CrmWorkHours({
   const isDimaKulyk = !canViewAll && monthRows[0]?.user_name === 'Діма Кулик'
 
   const updateDraft = (userId: string, field: keyof HourDraft, value: string) => {
+    if (!isDayEditable) return
     const sanitized = field === 'overtime_coefficient' ? value : value.replace(/[^\d.,]/g, '')
     setDrafts(current => ({ ...current, [userId]: { ...current[userId], [field]: sanitized } }))
   }
 
   const saveHours = async (targetUserId: string) => {
+    if (!isDayEditable) return
     const draft = drafts[targetUserId]
     if (!draft) return
     setSavingUserId(targetUserId)
@@ -225,18 +229,18 @@ export function CrmWorkHours({
                 <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_88px] items-end gap-2">
                   {selectedIsWeekend ? (
                     <label className="text-xs text-amber-700">Суботні години
-                      <input value={draft?.saturday_hours ?? ''} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                      <input value={draft?.saturday_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
                     </label>
                   ) : (
                     <label className="text-xs text-gray-500">Звичайні години
-                      <input value={draft?.regular_hours ?? ''} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                      <input value={draft?.regular_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
                     </label>
                   )}
                   <label className="text-xs text-gray-500">Години переробки
-                    <input value={draft?.overtime_hours ?? ''} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                    <input value={draft?.overtime_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
                   </label>
                   <label className="text-[11px] text-gray-500">Коеф.
-                    <select value={draft?.overtime_coefficient ?? '2'} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-2 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={draft?.overtime_coefficient ?? '2'} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-2 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500">
                       <option value="1">×1,0</option><option value="1.2">×1,2</option><option value="1.5">×1,5</option><option value="2">×2,0</option>
                     </select>
                   </label>
@@ -247,9 +251,9 @@ export function CrmWorkHours({
                   {!compact && <div className="text-right"><p className="text-xs text-gray-400">Бонус за місяць</p><p className="text-sm font-bold text-amber-600">{monthRow?.total_bonus ?? 0} грн</p></div>}
                 </div>
 
-                <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className="mt-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                {isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className="mt-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
                   {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено ✓' : onSaveOrder ? 'Зберегти дані за день' : 'Зберегти години за день'}
-                </button>
+                </button>}
               </div>
             )
           })}

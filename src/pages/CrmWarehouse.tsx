@@ -394,6 +394,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [graphError, setGraphError] = useState('')
 
   const isToday = selectedDate === toDateInputValue(new Date())
+  const isCrmPastDayReadOnly = isCrm && !isToday
 
   // ── Fetch entries for selected date ─────────────────────────────────────────
   const fetchDay = useCallback(async (date: string) => {
@@ -652,6 +653,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   // ── Submit entry ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (isCrmPastDayReadOnly) {
+      setSubmitError('За минулі дні дані доступні лише для перегляду')
+      return false
+    }
     if (!orderFieldsDirty) return true
     if (!orders && !units) return true
     const o = parseInt(orders, 10)
@@ -871,11 +876,11 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const totalUnits  = entries.reduce((s, e) => s + e.units_count, 0)
 
   useEffect(() => {
-    if (tab !== 'input' || !canManageCrm) return
+    if (tab !== 'input') return
     setOrders(totalOrders > 0 ? String(totalOrders) : '')
     setUnits(totalUnits > 0 ? String(totalUnits) : '')
     setOrderFieldsDirty(false)
-  }, [tab, canManageCrm, selectedDate, selectedCrmUserId, totalOrders, totalUnits])
+  }, [tab, selectedDate, selectedCrmUserId, totalOrders, totalUnits])
 
   const navigationTabs: Tab[] = isCrm
     ? ['input', 'work-hours']
@@ -1025,20 +1030,22 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
+                      disabled={isCrmPastDayReadOnly}
                       onChange={e => { setOrders(e.target.value.replace(/\D/g, '')); setOrderFieldsDirty(true) }} placeholder="0"
                       className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
                                  focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                                 text-gray-800 placeholder-gray-300 text-base"
+                                 text-gray-800 placeholder-gray-300 text-base disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" value={units}
+                      disabled={isCrmPastDayReadOnly}
                       onChange={e => { setUnits(e.target.value.replace(/\D/g, '')); setOrderFieldsDirty(true) }} placeholder="0"
                       className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
                                  focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
-                                 text-gray-800 placeholder-gray-300 text-base"
+                                 text-gray-800 placeholder-gray-300 text-base disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                 </div>
@@ -1056,6 +1063,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               userId={user.id}
               userPin={user.pin}
               canManage={canManageCrm}
+              canEditSelectedDate={!isCrmPastDayReadOnly}
               showDashboard={false}
               selectedDate={selectedDate}
               onSelectedDateChange={setSelectedDate}
