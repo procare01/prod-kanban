@@ -45,6 +45,11 @@ function toDateValue(date: Date) {
 
 function monthValue(value: string) { return `${value.slice(0, 7)}-01` }
 
+function addMonths(value: string, amount: number) {
+  const [year, month] = value.slice(0, 7).split('-').map(Number)
+  return toDateValue(new Date(year, month - 1 + amount, 1))
+}
+
 function monthLabel(value: string) {
   const [year, month] = value.split('-').map(Number)
   const label = new Date(year, month - 1, 1).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' })
@@ -67,6 +72,9 @@ export function CrmWorkHours({
   const today = toDateValue(new Date())
   const [internalDate] = useState(today)
   const selectedDate = controlledDate ?? internalDate
+  const selectedMonth = monthValue(selectedDate)
+  const currentMonth = monthValue(today)
+  const canGoToNextMonth = selectedMonth < currentMonth
   const isDayEditable = canManage || canEditSelectedDate
   const [monthRows, setMonthRows] = useState<CrmMonthDashboardRow[]>([])
   const [dayRows, setDayRows] = useState<CrmDailyWorkHoursRow[]>([])
@@ -166,6 +174,32 @@ export function CrmWorkHours({
 
   return (
     <div className="space-y-3">
+      {readOnly && onSelectedDateChange && <div className="flex items-center justify-between rounded-2xl border border-white/80 bg-white/75 px-3 py-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => onSelectedDateChange(addMonths(selectedMonth, -1))}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Попередній календарний місяць"
+          title="Попередній календарний місяць"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <p className="text-sm font-bold text-gray-700">{monthLabel(selectedMonth)}</p>
+        <button
+          type="button"
+          disabled={!canGoToNextMonth}
+          onClick={() => onSelectedDateChange(addMonths(selectedMonth, 1))}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+          aria-label="Наступний календарний місяць"
+          title="Наступний календарний місяць"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>}
       {showDashboard && <div className="crm-hours-dashboard rounded-3xl p-4 shadow-md bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>

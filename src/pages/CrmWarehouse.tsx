@@ -37,6 +37,12 @@ function formatDisplayDate(iso: string) {
   return `${d}.${m}.${y.slice(2)}`
 }
 
+function formatMonthHeading(month: string) {
+  const [year, value] = month.split('-').map(Number)
+  const label = new Date(year, value - 1, 1).toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' })
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
 function getCrmEntryWorkDate(entry: CrmEntry) {
   return entry.work_date
     ? new Date(`${entry.work_date}T12:00:00`)
@@ -363,6 +369,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const todayValue = toDateInputValue(new Date())
   const [graphStartDate, setGraphStartDate] = useState(toDateInputValue(addDays(new Date(), -29)))
   const [graphEndDate, setGraphEndDate] = useState(todayValue)
+  const [reportDate, setReportDate] = useState(toDateInputValue(new Date()))
+  const [isPreviousMonthCollapsed, setIsPreviousMonthCollapsed] = useState(false)
   const isAnalyticsToday = analyticsDate === todayValue
   const isAnalyticsCurrentPeriod = useMemo(() => {
     if (chartPeriod === '1d') return isAnalyticsToday
@@ -870,6 +878,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       .sort((a, b) => b.key.localeCompare(a.key))
   }, [visibleRecentEntries])
 
+  const currentMonthKey = todayValue.slice(0, 7)
+  const currentMonthRecordGroups = recentEntryGroups.filter(group => group.key.slice(0, 7) === currentMonthKey)
+  const previousMonthRecordGroups = recentEntryGroups.filter(group => group.key.slice(0, 7) < currentMonthKey)
+  const previousMonthLabel = previousMonthRecordGroups.length > 0
+    ? formatMonthHeading(previousMonthRecordGroups[0].key.slice(0, 7))
+    : ''
+  const isReportCurrentMonth = reportDate.slice(0, 7) === todayValue.slice(0, 7)
+
   const displayedInputEntries = canManageCrm ? entries : visibleRecentEntries
 
   const totalOrders = entries.reduce((s, e) => s + e.orders_count, 0)
@@ -881,6 +897,57 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     setUnits(totalUnits > 0 ? String(totalUnits) : '')
     setOrderFieldsDirty(false)
   }, [tab, selectedDate, selectedCrmUserId, totalOrders, totalUnits])
+
+  const renderRecordGroups = (groups: typeof recentEntryGroups) => groups.map(group => (
+    <section
+      key={group.key}
+      className={`rounded-2xl border p-2 ${group.isWeekend ? 'border-amber-400' : 'border-slate-400/90'}`}
+    >
+      <p className={`mb-1 rounded-lg px-2 py-1 text-xs font-semibold ${group.isWeekend ? 'bg-amber-200 text-amber-800' : 'bg-slate-200 text-gray-600'}`}>
+        {group.label}
+      </p>
+      <div className="space-y-1.5">
+        {sortCrmRowsByWorker(group.entries).map(entry => {
+          const bonus = calcBonus(entry.orders_count, bonusSettings)
+          const hasMoreThanEightHours = Number(entry.weighted_hours ?? 0) > 8
+          const entryDate = getCrmEntryWorkDate(entry)
+          const date = (entry.work_date || hideRecordTime)
+            ? entryDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv' })
+            : entryDate.toLocaleString('uk-UA', {
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
+              })
+          return (
+            <div
+              key={entry.id}
+              className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${hasMoreThanEightHours ? 'border-pink-200 bg-pink-50/80' : group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
+            >
+              <div className="flex-1 min-w-0">
+                {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
+                <p className="text-xs text-gray-400">{date}</p>
+              </div>
+              {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
+              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
+              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
+              <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
+              {canEditRecentRecords && (
+                <button
+                  type="button"
+                  onClick={() => beginEditRecentRecord(entry)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  aria-label={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
+                  title={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 2.651 2.651M4.5 19.5l4.131-.826L19.5 7.805l-2.651-2.651L5.98 16.023 4.5 19.5Z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  ))
 
   const navigationTabs: Tab[] = isCrm
     ? ['input', 'work-hours']
@@ -1078,9 +1145,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {/* ── MONTHLY REVIEW ───────────────────────────────────────────────── */}
         {tab === 'work-hours' && (canViewCrmHours || isCrm) && (
           <>
-            <CrmWorkHours userId={user.id} userPin={user.pin} canManage={canManageCrm} canViewAll={canViewCrmHours} readOnly />
+            <CrmWorkHours
+              userId={user.id}
+              userPin={user.pin}
+              canManage={canManageCrm}
+              canViewAll={canViewCrmHours}
+              selectedDate={reportDate}
+              onSelectedDateChange={setReportDate}
+              readOnly
+            />
 
-            {isCrm && !isDimaKulyk && !loadingDay && (() => {
+            {isCrm && isReportCurrentMonth && !isDimaKulyk && !loadingDay && (() => {
               const dayBonus = calcBonus(totalOrders, bonusSettings)
               const monthBonus = monthlyBonus[0]?.total_bonus ?? 0
               return (
@@ -1107,56 +1182,25 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               <div className="rounded-3xl border border-white/80 bg-white/75 p-4 shadow-md">
                 <p className="mb-3 text-sm font-semibold text-gray-700">Останні записи</p>
                 <div className="space-y-3">
-                  {recentEntryGroups.map(group => (
-                    <section
-                      key={group.key}
-                      className={`rounded-2xl border p-2 ${group.isWeekend ? 'border-amber-400' : 'border-slate-400/90'}`}
-                    >
-                      <p className={`mb-1 rounded-lg px-2 py-1 text-xs font-semibold ${group.isWeekend ? 'bg-amber-200 text-amber-800' : 'bg-slate-200 text-gray-600'}`}>
-                        {group.label}
-                      </p>
-                      <div className="space-y-1.5">
-                        {sortCrmRowsByWorker(group.entries).map(entry => {
-                          const bonus = calcBonus(entry.orders_count, bonusSettings)
-                          const hasMoreThanEightHours = Number(entry.weighted_hours ?? 0) > 8
-                          const entryDate = getCrmEntryWorkDate(entry)
-                          const date = (entry.work_date || hideRecordTime)
-                            ? entryDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv' })
-                            : entryDate.toLocaleString('uk-UA', {
-                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
-                              })
-                          return (
-                            <div
-                              key={entry.id}
-                              className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${hasMoreThanEightHours ? 'border-pink-200 bg-pink-50/80' : group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
-                            >
-                              <div className="flex-1 min-w-0">
-                                {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
-                                <p className="text-xs text-gray-400">{date}</p>
-                              </div>
-                              {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
-                              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
-                              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
-                              <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
-                              {canEditRecentRecords && (
-                                <button
-                                  type="button"
-                                  onClick={() => beginEditRecentRecord(entry)}
-                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                                  aria-label={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
-                                  title={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
-                                >
-                                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 2.651 2.651M4.5 19.5l4.131-.826L19.5 7.805l-2.651-2.651L5.98 16.023 4.5 19.5Z" />
-                                  </svg>
-                                </button>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
+                  {renderRecordGroups(currentMonthRecordGroups)}
+                  {previousMonthRecordGroups.length > 0 && (
+                    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70">
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviousMonthCollapsed(value => !value)}
+                        aria-expanded={!isPreviousMonthCollapsed}
+                        className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-white/70"
+                      >
+                        <span className="text-sm font-semibold text-gray-700">{previousMonthLabel}</span>
+                        <svg className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${isPreviousMonthCollapsed ? '' : 'rotate-180'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 9-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {!isPreviousMonthCollapsed && <div className="space-y-3 border-t border-slate-200 p-2">
+                        {renderRecordGroups(previousMonthRecordGroups)}
+                      </div>}
                     </section>
-                  ))}
+                  )}
                 </div>
               </div>
         )}
