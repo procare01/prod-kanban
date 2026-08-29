@@ -37,6 +37,12 @@ function formatDisplayDate(iso: string) {
   return `${d}.${m}.${y.slice(2)}`
 }
 
+function getCrmEntryWorkDate(entry: CrmEntry) {
+  return entry.work_date
+    ? new Date(`${entry.work_date}T12:00:00`)
+    : new Date(entry.created_at)
+}
+
 function getDateRangeDays(start: string, end: string) {
   const startDate = parseDateInputValue(start)
   const endDate = parseDateInputValue(end)
@@ -336,6 +342,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   // Input form
   const [orders, setOrders] = useState('')
   const [units, setUnits] = useState('')
+  const [orderFieldsDirty, setOrderFieldsDirty] = useState(false)
   const [selectedDate, setSelectedDate] = useState(toDateInputValue(new Date()))
   const [submitting, setSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -645,6 +652,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   // ── Submit entry ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (!orderFieldsDirty) return true
     if (!orders && !units) return true
     const o = parseInt(orders, 10)
     const u = parseInt(units, 10)
@@ -680,8 +688,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             p_created_at: ts,
           })
       if (error) throw error
-      setOrders('')
-      setUnits('')
+      setOrderFieldsDirty(false)
       setSubmitSuccess(true)
       setTimeout(() => setSubmitSuccess(false), 2500)
       fetchDay(selectedDate)
@@ -835,7 +842,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     const groups = new Map<string, { label: string; isWeekend: boolean; entries: CrmEntry[] }>()
 
     visibleRecentEntries.forEach(entry => {
-      const entryDate = new Date(entry.created_at)
+      const entryDate = getCrmEntryWorkDate(entry)
       const key = dateKeyFormatter.format(entryDate)
       const weekday = weekendFormatter.format(entryDate)
       const group = groups.get(key)
@@ -853,13 +860,23 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       })
     })
 
-    return Array.from(groups.entries()).map(([key, group]) => ({ key, ...group }))
+    return Array.from(groups.entries())
+      .map(([key, group]) => ({ key, ...group }))
+      .sort((a, b) => b.key.localeCompare(a.key))
   }, [visibleRecentEntries])
 
   const displayedInputEntries = canManageCrm ? entries : visibleRecentEntries
 
   const totalOrders = entries.reduce((s, e) => s + e.orders_count, 0)
   const totalUnits  = entries.reduce((s, e) => s + e.units_count, 0)
+
+  useEffect(() => {
+    if (tab !== 'input' || !canManageCrm) return
+    setOrders(totalOrders > 0 ? String(totalOrders) : '')
+    setUnits(totalUnits > 0 ? String(totalUnits) : '')
+    setOrderFieldsDirty(false)
+  }, [tab, canManageCrm, selectedDate, selectedCrmUserId, totalOrders, totalUnits])
+
   const navigationTabs: Tab[] = isCrm
     ? ['input', 'work-hours']
     : canManageCrm
@@ -965,14 +982,39 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   </span>
                 )}
               </div>
-              <input
-                type="date"
-                value={selectedDate}
-                max={toDateInputValue(new Date())}
-                onChange={e => setSelectedDate(e.target.value)}
-                className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
-                           focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(toDateInputValue(addDays(parseDateInputValue(selectedDate), -1)))}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                  aria-label="Попередній день"
+                  title="Попередній день"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m15 18-6-6 6-6" />
+                  </svg>
+                </button>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  max={toDateInputValue(new Date())}
+                  onChange={e => setSelectedDate(e.target.value)}
+                  className="text-xs text-gray-500 border border-gray-200 rounded-lg px-2 py-1
+                             focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
+                <button
+                  type="button"
+                  disabled={isToday}
+                  onClick={() => setSelectedDate(toDateInputValue(addDays(parseDateInputValue(selectedDate), 1)))}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Наступний день"
+                  title="Наступний день"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Input form */}
@@ -983,7 +1025,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
-                      onChange={e => setOrders(e.target.value.replace(/\D/g, ''))} placeholder="0"
+                      onChange={e => { setOrders(e.target.value.replace(/\D/g, '')); setOrderFieldsDirty(true) }} placeholder="0"
                       className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
                                  focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
                                  text-gray-800 placeholder-gray-300 text-base"
@@ -993,7 +1035,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" value={units}
-                      onChange={e => setUnits(e.target.value.replace(/\D/g, ''))} placeholder="0"
+                      onChange={e => { setUnits(e.target.value.replace(/\D/g, '')); setOrderFieldsDirty(true) }} placeholder="0"
                       className="h-12 w-full border border-gray-200 rounded-xl px-3 py-2.5
                                  focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400
                                  text-gray-800 placeholder-gray-300 text-base"
@@ -1069,8 +1111,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                         {sortCrmRowsByWorker(group.entries).map(entry => {
                           const bonus = calcBonus(entry.orders_count, bonusSettings)
                           const hasMoreThanEightHours = Number(entry.weighted_hours ?? 0) > 8
-                          const entryDate = new Date(entry.created_at)
-                          const date = hideRecordTime
+                          const entryDate = getCrmEntryWorkDate(entry)
+                          const date = (entry.work_date || hideRecordTime)
                             ? entryDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv' })
                             : entryDate.toLocaleString('uk-UA', {
                                 day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv',
