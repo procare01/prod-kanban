@@ -220,7 +220,7 @@ export function CrmWorkHours({
       {loading ? (
         <div className="rounded-3xl bg-white/75 border border-white p-8 flex justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : readOnly ? (
-        <div className="crm-hours-month-list space-y-3">
+        <div className="crm-hours-month-list space-y-3 lg:space-y-0">
           {monthRows.map(row => (
             <div key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
               <div className="flex items-start justify-between gap-3">
