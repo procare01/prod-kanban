@@ -1298,7 +1298,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {tab === 'analytics' && (
           <>
             <div className="flex gap-2">
-              {(['1d', '7d', '30d'] as ChartPeriod[]).map(p => (
+              {(['1d', '30d'] as ChartPeriod[]).map(p => (
                 <button
                   key={p}
                   onClick={() => setChartPeriod(p)}
@@ -1475,23 +1475,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     )
                   })()}
                 </div>
-
-                {/* Monthly totals */}
-                {analytics.monthly && chartPeriod === '30d' && (
-                  <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75">
-                    <p className="text-sm font-semibold text-gray-700 mb-3">За місяць {getPeriodRangeLabel(chartPeriod, analyticsDate)}</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
-                        <p className="text-2xl font-bold text-emerald-700">{analytics.monthly.total_orders}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">замовлень</p>
-                      </div>
-                      <div className="rounded-2xl p-4 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
-                        <p className="text-2xl font-bold text-blue-700">{analytics.monthly.total_units}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">одиниць товару</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Chart: orders */}
                 {chartPeriod !== '1d' && <div className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70">
