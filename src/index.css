@@ -203,6 +203,99 @@
     background: linear-gradient(135deg, #252c48 0%, #30375f 52%, #313459 100%);
   }
 
+  .crm-modern-theme .crm-hours-month-summary {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .crm-modern-theme .crm-hours-month-section {
+    padding: 0.7rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 0.9rem;
+    background: rgba(248, 250, 252, 0.72);
+  }
+
+  .crm-modern-theme .crm-hours-month-section-title {
+    margin-bottom: 0.6rem;
+    color: #475569;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .crm-modern-theme .crm-hours-month-section-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem 0.8rem;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-wrap {
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.82);
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-desktop {
+    display: none;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-heading,
+  .crm-modern-theme .crm-hours-month-scale-legend,
+  .crm-modern-theme .crm-hours-month-scale-legend span {
+    display: flex;
+    align-items: center;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-heading {
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.65rem;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-legend {
+    gap: 0.5rem;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-legend span {
+    gap: 0.2rem;
+    white-space: nowrap;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-key {
+    width: 0.45rem;
+    height: 0.45rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.14rem;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale {
+    display: grid;
+    grid-template-columns: repeat(31, minmax(0, 1fr));
+    gap: 0.18rem;
+    margin-top: 0;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-day {
+    height: 0.6rem;
+    border: 1px solid #000;
+    border-radius: 0.16rem;
+    background: #000;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-key--weekday,
+  .crm-modern-theme .crm-hours-month-scale-day--weekday {
+    border-color: #7796ff;
+    background: #dce7ff;
+  }
+
+  .crm-modern-theme .crm-hours-month-scale-key--weekend,
+  .crm-modern-theme .crm-hours-month-scale-day--weekend {
+    border-color: #f06a00;
+    background: #ff9f1c;
+  }
+
   @media (min-width: 1024px) {
     .crm-modern-theme .crm-content {
       padding: 1.5rem 1.5rem 3rem;
@@ -259,13 +352,32 @@
 
     .crm-modern-theme .crm-hours-month-list {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1rem;
     }
 
     .crm-modern-theme .crm-hours-month-card {
       min-height: 17rem;
       padding: 1.25rem;
+    }
+
+    .crm-modern-theme .crm-hours-month-summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .crm-modern-theme .crm-hours-month-scale-desktop {
+      display: block;
+    }
+
+    .crm-modern-theme .crm-hours-month-scale-mobile {
+      display: none;
+    }
+
+    .crm-modern-theme .crm-hours-month-section-metrics {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .crm-modern-theme .crm-analytics-worker-list {

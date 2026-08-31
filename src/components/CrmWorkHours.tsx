@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { CrmDailyWorkHoursRow, CrmMonthDashboardRow } from '../types'
+import type { CrmDailyWorkHoursRow, CrmEntry, CrmMonthDashboardRow } from '../types'
 
 interface Props {
   userId: string
@@ -16,6 +16,7 @@ interface Props {
   onSaveOrder?: () => Promise<boolean>
   canEditSelectedDate?: boolean
   collapseOvertimeControls?: boolean
+  recentEntries?: CrmEntry[]
 }
 
 type HourDraft = {
@@ -70,6 +71,26 @@ function weekdaysInMonth(value: string) {
   return weekdays
 }
 
+function datesInMonth(value: string) {
+  const [year, month] = value.split('-').map(Number)
+  const daysInMonth = new Date(year, month, 0).getDate()
+  return Array.from({ length: daysInMonth }, (_, index) => toDateValue(new Date(year, month - 1, index + 1)))
+}
+
+function isWeekendDate(value: string) {
+  const day = new Date(`${value}T12:00:00`).getDay()
+  return day === 0 || day === 6
+}
+
+function kyivDateValue(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date(value))
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
 function numberValue(value: string) {
   const parsed = Number(value.replace(',', '.'))
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
@@ -97,7 +118,7 @@ function formatDays(value: number) {
 export function CrmWorkHours({
   userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder, canEditSelectedDate = true,
-  collapseOvertimeControls = false,
+  collapseOvertimeControls = false, recentEntries = [],
 }: Props) {
   const today = toDateValue(new Date())
   const [internalDate] = useState(today)
@@ -204,6 +225,30 @@ export function CrmWorkHours({
   const visibleDayRows = targetUserId ? dayRows.filter(row => row.user_id === targetUserId) : dayRows
   const shouldShowOvertimeControls = !collapseOvertimeControls || showOvertimeControls
   const monthWeekdays = weekdaysInMonth(selectedMonth)
+  const monthDates = datesInMonth(selectedMonth)
+  const renderMonthScale = (row: CrmMonthDashboardRow) => {
+    const recentWorkDays = new Set(recentEntries
+      .filter(entry => entry.user_name === row.user_name)
+      .map(entry => kyivDateValue(entry.work_date ?? entry.created_at))
+      .filter(date => date.startsWith(selectedMonth.slice(0, 7))))
+
+    return (
+      <div className="crm-hours-month-scale-wrap">
+        <ol className="crm-hours-month-scale" aria-label={`Відпрацьовані дні за ${monthLabel(selectedMonth).toLowerCase()}`}>
+          {monthDates.map(date => {
+            const worked = recentWorkDays.has(date)
+            const weekend = isWeekendDate(date)
+            const state = worked ? (weekend ? 'weekend' : 'weekday') : 'empty'
+            const day = Number(date.slice(-2))
+            const title = worked
+              ? `${day} — ${weekend ? 'відпрацьований вихідний' : 'відпрацьований будень'}`
+              : `${day} — немає даних`
+            return <li key={date} className={`crm-hours-month-scale-day crm-hours-month-scale-day--${state}`} title={title} aria-label={title} />
+          })}
+        </ol>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
@@ -259,23 +304,38 @@ export function CrmWorkHours({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-gray-800">{row.user_name}</p>
-                  <p className="mt-1 text-xs text-gray-400">Підсумок за місяць</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[11px] text-gray-400">До оплати</p>
                   <p className="text-lg font-extrabold text-blue-700">{formatHours(row.weighted_hours)} год</p>
                 </div>
               </div>
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-3 text-xs">
-                <div className="border-l-2 border-slate-300 pl-2"><dt className="text-gray-400">Відпрацьовано</dt><dd className="mt-0.5 font-bold text-gray-800">{formatDays(row.days_active)}</dd></div>
-                <div className="border-l-2 border-indigo-300 pl-2"><dt className="text-gray-400">Буднів: відпрацьовано / у місяці</dt><dd className="mt-0.5 font-bold text-indigo-700">{formatDays(Math.max(0, row.days_active - row.saturdays_worked))} / {formatDays(monthWeekdays)}</dd></div>
-                <div className="border-l-2 border-amber-300 pl-2"><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{formatDays(row.saturdays_worked)}</dd></div>
-                <div className="border-l-2 border-emerald-300 pl-2"><dt className="text-gray-400">Звичайні години</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
-                <div className="border-l-2 border-blue-300 pl-2"><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
-                <div className="border-l-2 border-cyan-300 pl-2"><dt className="text-gray-400">Одиниць товару</dt><dd className="mt-0.5 font-bold text-cyan-700">{row.total_units}</dd></div>
-                <div className="border-l-2 border-violet-300 pl-2"><dt className="text-gray-400">Кількість замовлень</dt><dd className="mt-0.5 font-bold text-violet-700">{row.total_orders}</dd></div>
-                <div className="border-l-2 border-amber-400 pl-2"><dt className="text-gray-400">Бонус</dt><dd className="mt-0.5 font-bold text-amber-700">{row.total_bonus} грн</dd></div>
-              </dl>
+              <div className="crm-hours-month-scale-desktop">{renderMonthScale(row)}</div>
+              <div className="crm-hours-month-summary mt-4 border-t border-slate-100 pt-3 text-xs">
+                <section className="crm-hours-month-section crm-hours-month-section--days" aria-labelledby={`days-${row.user_id}`}>
+                  <h3 id={`days-${row.user_id}`} className="crm-hours-month-section-title">Дні</h3>
+                  <dl className="crm-hours-month-section-metrics">
+                    <div className="border-l-2 border-indigo-300 pl-2"><dt className="text-gray-400">Будні: відпрацьовано / у місяці</dt><dd className="mt-0.5 font-bold text-indigo-700">{formatDays(Math.max(0, row.days_active - row.saturdays_worked))} / {formatDays(monthWeekdays)}</dd></div>
+                    <div className="border-l-2 border-slate-300 pl-2"><dt className="text-gray-400">Відпрацьовано всього</dt><dd className="mt-0.5 font-bold text-gray-800">{formatDays(row.days_active)}</dd></div>
+                    <div className="border-l-2 border-amber-300 pl-2"><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{formatDays(row.saturdays_worked)}</dd></div>
+                  </dl>
+                  <div className="crm-hours-month-scale-mobile">{renderMonthScale(row)}</div>
+                </section>
+                <section className="crm-hours-month-section crm-hours-month-section--hours" aria-labelledby={`hours-${row.user_id}`}>
+                  <h3 id={`hours-${row.user_id}`} className="crm-hours-month-section-title">Години</h3>
+                  <dl className="crm-hours-month-section-metrics">
+                    <div className="border-l-2 border-emerald-300 pl-2"><dt className="text-gray-400">Звичайні години</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
+                    <div className="border-l-2 border-blue-300 pl-2"><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
+                  </dl>
+                </section>
+                <section className="crm-hours-month-section crm-hours-month-section--results" aria-labelledby={`results-${row.user_id}`}>
+                  <h3 id={`results-${row.user_id}`} className="crm-hours-month-section-title">Результат і бонус</h3>
+                  <dl className="crm-hours-month-section-metrics">
+                    <div className="border-l-2 border-cyan-300 pl-2"><dt className="text-gray-400">Одиниць товару</dt><dd className="mt-0.5 font-bold text-cyan-700">{row.total_units}</dd></div>
+                    <div className="border-l-2 border-violet-300 pl-2"><dt className="text-gray-400">Кількість замовлень</dt><dd className="mt-0.5 font-bold text-violet-700">{row.total_orders}</dd></div>
+                    <div className="border-l-2 border-amber-400 pl-2"><dt className="text-gray-400">Бонус</dt><dd className="mt-0.5 font-bold text-amber-700">{row.total_bonus} грн</dd></div>
+                  </dl>
+                </section>
+              </div>
             </article>
           ))}
         </div>

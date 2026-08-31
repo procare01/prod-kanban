@@ -1153,6 +1153,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               canViewAll={canViewCrmHours}
               selectedDate={reportDate}
               onSelectedDateChange={setReportDate}
+              recentEntries={recentEntries}
               readOnly
             />
 
