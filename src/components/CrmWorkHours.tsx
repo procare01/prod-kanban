@@ -253,7 +253,7 @@ export function CrmWorkHours({
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-3 text-xs">
                 <div><dt className="text-gray-400">Відпрацьовано</dt><dd className="mt-0.5 font-bold text-gray-800">{row.days_active} днів</dd></div>
-                <div><dt className="text-gray-400">Буднів у місяці</dt><dd className="mt-0.5 font-bold text-gray-800">{monthWeekdays} днів</dd></div>
+                <div><dt className="text-gray-400">Буднів: відпрацьовано / у місяці</dt><dd className="mt-0.5 font-bold text-gray-800">{Math.max(0, row.days_active - row.saturdays_worked)} / {monthWeekdays} днів</dd></div>
                 <div><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{row.saturdays_worked} дн.</dd></div>
                 <div><dt className="text-gray-400">Звичайні години</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
                 <div><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
