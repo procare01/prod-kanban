@@ -57,6 +57,19 @@ function monthLabel(value: string) {
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
+function weekdaysInMonth(value: string) {
+  const [year, month] = value.split('-').map(Number)
+  const daysInMonth = new Date(year, month, 0).getDate()
+  let weekdays = 0
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dayOfWeek = new Date(year, month - 1, day).getDay()
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) weekdays += 1
+  }
+
+  return weekdays
+}
+
 function numberValue(value: string) {
   const parsed = Number(value.replace(',', '.'))
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
@@ -175,6 +188,7 @@ export function CrmWorkHours({
   const selectedIsWeekend = [0, 6].includes(new Date(`${selectedDate}T12:00:00`).getDay())
   const visibleDayRows = targetUserId ? dayRows.filter(row => row.user_id === targetUserId) : dayRows
   const shouldShowOvertimeControls = !collapseOvertimeControls || showOvertimeControls
+  const monthWeekdays = weekdaysInMonth(selectedMonth)
 
   return (
     <div className="space-y-3">
@@ -226,19 +240,28 @@ export function CrmWorkHours({
       ) : readOnly ? (
         <div className="crm-hours-month-list space-y-3 lg:space-y-0">
           {monthRows.map(row => (
-            <div key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
+            <article key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-gray-800">{row.user_name}</p>
-                  <p className="mt-1 text-xs text-gray-400">{row.total_orders} замовл. · {row.total_units} од. · {row.days_active} роб. днів</p>
+                  <p className="mt-1 text-xs text-gray-400">Підсумок за місяць</p>
                 </div>
-                <p className="text-lg font-extrabold text-blue-700">{formatHours(row.weighted_hours)} год</p>
+                <div className="text-right">
+                  <p className="text-[11px] text-gray-400">До оплати</p>
+                  <p className="text-lg font-extrabold text-blue-700">{formatHours(row.weighted_hours)} год</p>
+                </div>
               </div>
-              <div className={`mt-3 grid gap-2 text-sm ${isDimaKulyk ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {!isDimaKulyk && <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-700">Бонус: <span className="font-bold">{row.total_bonus} грн</span></div>}
-                <div className="rounded-xl bg-emerald-50 px-3 py-2 text-emerald-700">Звичайні: <span className="font-bold">{formatHours(row.regular_hours)} год</span></div>
-              </div>
-            </div>
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-3 text-xs">
+                <div><dt className="text-gray-400">Відпрацьовано</dt><dd className="mt-0.5 font-bold text-gray-800">{row.days_active} днів</dd></div>
+                <div><dt className="text-gray-400">Буднів у місяці</dt><dd className="mt-0.5 font-bold text-gray-800">{monthWeekdays} днів</dd></div>
+                <div><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{row.saturdays_worked} дн.</dd></div>
+                <div><dt className="text-gray-400">Звичайні години</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
+                <div><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
+                <div><dt className="text-gray-400">Одиниць товару</dt><dd className="mt-0.5 font-bold text-gray-800">{row.total_units}</dd></div>
+                <div><dt className="text-gray-400">Кількість замовлень</dt><dd className="mt-0.5 font-bold text-gray-800">{row.total_orders}</dd></div>
+                <div><dt className="text-gray-400">Бонус</dt><dd className="mt-0.5 font-bold text-amber-700">{row.total_bonus} грн</dd></div>
+              </dl>
+            </article>
           ))}
         </div>
       ) : visibleDayRows.length === 0 ? (
