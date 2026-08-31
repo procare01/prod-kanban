@@ -79,6 +79,21 @@ function formatHours(value: number) {
   return Number(value).toLocaleString('uk-UA', { maximumFractionDigits: 2 })
 }
 
+function formatDays(value: number) {
+  const count = Number(value) || 0
+  const lastTwoDigits = Math.abs(count) % 100
+  const lastDigit = Math.abs(count) % 10
+  const label = lastTwoDigits >= 11 && lastTwoDigits <= 14
+    ? 'днів'
+    : lastDigit === 1
+      ? 'день'
+      : lastDigit >= 2 && lastDigit <= 4
+        ? 'дні'
+        : 'днів'
+
+  return `${count} ${label}`
+}
+
 export function CrmWorkHours({
   userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder, canEditSelectedDate = true,
@@ -252,9 +267,9 @@ export function CrmWorkHours({
                 </div>
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-3 text-xs">
-                <div className="border-l-2 border-slate-300 pl-2"><dt className="text-gray-400">Відпрацьовано</dt><dd className="mt-0.5 font-bold text-gray-800">{row.days_active} днів</dd></div>
-                <div className="border-l-2 border-indigo-300 pl-2"><dt className="text-gray-400">Буднів: відпрацьовано / у місяці</dt><dd className="mt-0.5 font-bold text-indigo-700">{Math.max(0, row.days_active - row.saturdays_worked)} / {monthWeekdays} днів</dd></div>
-                <div className="border-l-2 border-amber-300 pl-2"><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{row.saturdays_worked} дн.</dd></div>
+                <div className="border-l-2 border-slate-300 pl-2"><dt className="text-gray-400">Відпрацьовано</dt><dd className="mt-0.5 font-bold text-gray-800">{formatDays(row.days_active)}</dd></div>
+                <div className="border-l-2 border-indigo-300 pl-2"><dt className="text-gray-400">Буднів: відпрацьовано / у місяці</dt><dd className="mt-0.5 font-bold text-indigo-700">{formatDays(Math.max(0, row.days_active - row.saturdays_worked))} / {formatDays(monthWeekdays)}</dd></div>
+                <div className="border-l-2 border-amber-300 pl-2"><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{formatDays(row.saturdays_worked)}</dd></div>
                 <div className="border-l-2 border-emerald-300 pl-2"><dt className="text-gray-400">Звичайні години</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
                 <div className="border-l-2 border-blue-300 pl-2"><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
                 <div className="border-l-2 border-cyan-300 pl-2"><dt className="text-gray-400">Одиниць товару</dt><dd className="mt-0.5 font-bold text-cyan-700">{row.total_units}</dd></div>
