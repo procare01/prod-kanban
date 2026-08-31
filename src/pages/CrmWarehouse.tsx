@@ -1131,6 +1131,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               userPin={user.pin}
               canManage={canManageCrm}
               canEditSelectedDate={!isCrmPastDayReadOnly}
+              collapseOvertimeControls={isCrm}
               showDashboard={false}
               selectedDate={selectedDate}
               onSelectedDateChange={setSelectedDate}

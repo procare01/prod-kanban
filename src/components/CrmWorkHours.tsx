@@ -15,6 +15,7 @@ interface Props {
   compact?: boolean
   onSaveOrder?: () => Promise<boolean>
   canEditSelectedDate?: boolean
+  collapseOvertimeControls?: boolean
 }
 
 type HourDraft = {
@@ -68,6 +69,7 @@ function formatHours(value: number) {
 export function CrmWorkHours({
   userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder, canEditSelectedDate = true,
+  collapseOvertimeControls = false,
 }: Props) {
   const today = toDateValue(new Date())
   const [internalDate] = useState(today)
@@ -83,6 +85,7 @@ export function CrmWorkHours({
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [savedUserId, setSavedUserId] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [showOvertimeControls, setShowOvertimeControls] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -171,6 +174,7 @@ export function CrmWorkHours({
 
   const selectedIsWeekend = [0, 6].includes(new Date(`${selectedDate}T12:00:00`).getDay())
   const visibleDayRows = targetUserId ? dayRows.filter(row => row.user_id === targetUserId) : dayRows
+  const shouldShowOvertimeControls = !collapseOvertimeControls || showOvertimeControls
 
   return (
     <div className="space-y-3">
@@ -260,24 +264,38 @@ export function CrmWorkHours({
                   {selectedIsWeekend && <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Вихідний {row.saturday_number || 1} · ×{String(saturdayRate).replace('.', ',')}</span>}
                 </div>}
 
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_88px] items-end gap-2">
-                  {selectedIsWeekend ? (
-                    <label className="text-xs text-amber-700">Суботні години
-                      <input value={draft?.saturday_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
-                    </label>
-                  ) : (
-                    <label className="text-xs text-gray-500">Звичайні години
-                      <input value={draft?.regular_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
-                    </label>
-                  )}
-                  <label className="text-xs text-gray-500">Години переробки
+                <div className={`grid items-end gap-2 ${shouldShowOvertimeControls ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_88px]' : 'grid-cols-1'}`}>
+                  <div className="min-w-0">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className={`text-xs ${selectedIsWeekend ? 'text-amber-700' : 'text-gray-500'}`}>{selectedIsWeekend ? 'Суботні години' : 'Звичайні години'}</p>
+                      {collapseOvertimeControls && (
+                        <button
+                          type="button"
+                          onClick={() => setShowOvertimeControls(value => !value)}
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${showOvertimeControls ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'}`}
+                          aria-label={showOvertimeControls ? 'Сховати години переробки' : 'Показати години переробки'}
+                          title={showOvertimeControls ? 'Сховати години переробки' : 'Показати години переробки'}
+                        >
+                          <svg className={`h-4 w-4 transition-transform ${showOvertimeControls ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    {selectedIsWeekend ? (
+                      <input value={draft?.saturday_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className="h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
+                    ) : (
+                      <input value={draft?.regular_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className="h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
+                    )}
+                  </div>
+                  {shouldShowOvertimeControls && <label className="text-xs text-gray-500">Години переробки
                     <input value={draft?.overtime_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
-                  </label>
-                  <label className="text-[11px] text-gray-500">Коеф.
+                  </label>}
+                  {shouldShowOvertimeControls && <label className="text-[11px] text-gray-500">Коеф.
                     <select value={draft?.overtime_coefficient ?? '2'} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'overtime_coefficient', e.target.value)} className="mt-1 h-12 w-full rounded-xl border border-gray-200 bg-white px-2 py-2.5 text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500">
                       <option value="1">×1,0</option><option value="1.2">×1,2</option><option value="1.5">×1,5</option><option value="2">×2,0</option>
                     </select>
-                  </label>
+                  </label>}
                 </div>
 
                 <div className={`mt-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-center ${compact ? 'justify-start' : 'justify-between'}`}>
