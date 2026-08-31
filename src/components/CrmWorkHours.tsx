@@ -26,6 +26,14 @@ type HourDraft = {
 }
 
 const CRM_WORKER_SURNAME_ORDER = ['яблонський', 'кулик', 'самардак', 'поліщук', 'сіренко', 'машталер']
+const CRM_MONTH_CARD_ACCENTS = [
+  'border-emerald-200/90 bg-emerald-50/75 shadow-emerald-100/80',
+  'border-blue-200/90 bg-blue-50/75 shadow-blue-100/80',
+  'border-amber-200/90 bg-amber-50/75 shadow-amber-100/80',
+  'border-rose-200/90 bg-rose-50/75 shadow-rose-100/80',
+  'border-cyan-200/90 bg-cyan-50/75 shadow-cyan-100/80',
+  'border-violet-200/90 bg-violet-50/75 shadow-violet-100/80',
+]
 
 function sortCrmWorkerRows<T extends { user_name: string }>(rows: T[]) {
   const position = (name: string) => {
@@ -239,8 +247,8 @@ export function CrmWorkHours({
         <div className="rounded-3xl bg-white/75 border border-white p-8 flex justify-center"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : readOnly ? (
         <div className="crm-hours-month-list space-y-3 lg:space-y-0">
-          {monthRows.map(row => (
-            <article key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
+          {monthRows.map((row, index) => (
+            <article key={row.user_id} className={`crm-hours-month-card rounded-3xl border p-4 shadow-md ${CRM_MONTH_CARD_ACCENTS[index % CRM_MONTH_CARD_ACCENTS.length]}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-gray-800">{row.user_name}</p>
