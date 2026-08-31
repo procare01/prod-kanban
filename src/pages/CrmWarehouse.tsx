@@ -370,7 +370,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [graphStartDate, setGraphStartDate] = useState(toDateInputValue(addDays(new Date(), -29)))
   const [graphEndDate, setGraphEndDate] = useState(todayValue)
   const [reportDate, setReportDate] = useState(toDateInputValue(new Date()))
-  const [isPreviousMonthCollapsed, setIsPreviousMonthCollapsed] = useState(false)
+  const [isPreviousMonthCollapsed, setIsPreviousMonthCollapsed] = useState(true)
   const isAnalyticsToday = analyticsDate === todayValue
   const isAnalyticsCurrentPeriod = useMemo(() => {
     if (chartPeriod === '1d') return isAnalyticsToday
