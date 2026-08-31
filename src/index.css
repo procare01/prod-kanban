@@ -438,9 +438,8 @@
       gap: 1rem;
     }
 
-    .crm-modern-theme .crm-analytics-worker-list > :first-child,
-    .crm-modern-theme .crm-analytics-worker-list > :last-child:nth-child(even) {
-      grid-column: 1 / -1;
+    .crm-modern-theme .crm-analytics-worker-list > * + * {
+      margin-top: 0 !important;
     }
 
     .crm-modern-theme .crm-analytics-worker-card {

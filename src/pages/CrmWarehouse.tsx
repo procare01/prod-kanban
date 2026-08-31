@@ -1336,11 +1336,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <p className="text-sm font-semibold text-gray-700">
                         {getKpiPeriodLabel(chartPeriod, isAnalyticsToday, analyticsDate)}
                       </p>
-                      <div className="crm-analytics-total flex items-baseline gap-3 text-sm tabular-nums">
-                        <span className="font-semibold text-gray-500">Всього</span>
-                        <span><span className="text-lg font-bold text-emerald-700">{chartPeriod === '1d' ? (analyticsDayData?.total_orders ?? 0) : (analytics.by_user_today?.reduce((sum, user) => sum + user.total_orders, 0) ?? 0)}</span><span className="ml-1 text-xs text-gray-400">замовл.</span></span>
-                        <span><span className="text-lg font-bold text-blue-700">{chartPeriod === '1d' ? (analyticsDayData?.total_units ?? 0) : (analytics.by_user_today?.reduce((sum, user) => sum + user.total_units, 0) ?? 0)}</span><span className="ml-1 text-xs text-gray-400">од.</span></span>
-                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -1381,19 +1376,18 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <>
                         <div className="crm-analytics-kpi-grid grid grid-cols-2 gap-2 mb-2">
                           <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
-                            <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
-                            <p className="text-2xl font-extrabold text-emerald-700">{(analyticsDayData.total_orders / 8).toFixed(1)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Всього: {analyticsDayData.total_orders}</p>
+                            <p className="text-xs text-gray-400 mb-1">Замовлень</p>
+                            <p className="text-2xl font-extrabold text-emerald-700">{analyticsDayData.total_orders}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">За годину: {(analyticsDayData.total_orders / 8).toFixed(1)}</p>
                           </div>
                           <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
-                            <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
-                            <p className="text-2xl font-extrabold text-blue-700">{(analyticsDayData.total_units / 8).toFixed(1)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Всього: {analyticsDayData.total_units}</p>
+                            <p className="text-xs text-gray-400 mb-1">Одиниць</p>
+                            <p className="text-2xl font-extrabold text-blue-700">{analyticsDayData.total_units}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">За годину: {(analyticsDayData.total_units / 8).toFixed(1)}</p>
                           </div>
                         </div>
                         {rows.length > 0 && (
                           <div className="crm-analytics-worker-list space-y-3">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                             {rows.map(u => (
                               <div key={u.user_id} className="crm-analytics-worker-card rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
                                 <div className="flex items-center justify-between mb-2">
@@ -1439,18 +1433,17 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       <>
                         <div className="crm-analytics-kpi-grid grid grid-cols-2 gap-2 mb-2">
                           <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/60 border-2 border-emerald-200/70 shadow-[inset_0_2px_10px_rgba(16,185,129,0.08)]">
-                            <p className="text-xs text-gray-400 mb-1">Замовлень/год</p>
-                            <p className="text-2xl font-extrabold text-emerald-700">{(totalO / (days * 8)).toFixed(1)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Всього: {totalO}</p>
+                            <p className="text-xs text-gray-400 mb-1">Замовлень</p>
+                            <p className="text-2xl font-extrabold text-emerald-700">{totalO}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">За годину: {(totalO / (days * 8)).toFixed(1)}</p>
                           </div>
                           <div className="crm-analytics-kpi-card rounded-2xl p-3 bg-gradient-to-br from-blue-50 to-indigo-50/60 border-2 border-blue-200/70 shadow-[inset_0_2px_10px_rgba(99,102,241,0.08)]">
-                            <p className="text-xs text-gray-400 mb-1">Одиниць/год</p>
-                            <p className="text-2xl font-extrabold text-blue-700">{(totalU / (days * 8)).toFixed(1)}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Всього: {totalU}</p>
+                            <p className="text-xs text-gray-400 mb-1">Одиниць</p>
+                            <p className="text-2xl font-extrabold text-blue-700">{totalU}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">За годину: {(totalU / (days * 8)).toFixed(1)}</p>
                           </div>
                         </div>
                         <div className="crm-analytics-worker-list space-y-3">
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">По співробітниках</p>
                           {rows.map(u => (
                             <div key={u.user_id} className="crm-analytics-worker-card rounded-2xl p-3 bg-white/60 backdrop-blur-sm border border-white/80">
                               <div className="flex items-center justify-between mb-2">
