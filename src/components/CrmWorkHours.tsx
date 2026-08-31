@@ -266,13 +266,20 @@ export function CrmWorkHours({
 
                 <div className={`grid items-end gap-2 ${shouldShowOvertimeControls ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_88px]' : 'grid-cols-1'}`}>
                   <div className="min-w-0">
-                    <div className="mb-1 flex items-center justify-between gap-2">
+                    <div className="mb-1">
                       <p className={`text-xs ${selectedIsWeekend ? 'text-amber-700' : 'text-gray-500'}`}>{selectedIsWeekend ? 'Суботні години' : 'Звичайні години'}</p>
+                    </div>
+                    <div className="relative">
+                      {selectedIsWeekend ? (
+                        <input value={draft?.saturday_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className={`h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${collapseOvertimeControls ? 'pr-12' : ''}`} />
+                      ) : (
+                        <input value={draft?.regular_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className={`h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${collapseOvertimeControls ? 'pr-12' : ''}`} />
+                      )}
                       {collapseOvertimeControls && (
                         <button
                           type="button"
                           onClick={() => setShowOvertimeControls(value => !value)}
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${showOvertimeControls ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'}`}
+                          className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg transition-colors ${showOvertimeControls ? 'bg-blue-700 text-white hover:bg-blue-800' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
                           aria-label={showOvertimeControls ? 'Сховати години переробки' : 'Показати години переробки'}
                           title={showOvertimeControls ? 'Сховати години переробки' : 'Показати години переробки'}
                         >
@@ -282,11 +289,6 @@ export function CrmWorkHours({
                         </button>
                       )}
                     </div>
-                    {selectedIsWeekend ? (
-                      <input value={draft?.saturday_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'saturday_hours', e.target.value)} inputMode="decimal" placeholder="0" className="h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-base font-semibold text-gray-800 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
-                    ) : (
-                      <input value={draft?.regular_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'regular_hours', e.target.value)} inputMode="decimal" placeholder="0" className="h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
-                    )}
                   </div>
                   {shouldShowOvertimeControls && <label className="text-xs text-gray-500">Години переробки
                     <input value={draft?.overtime_hours ?? ''} disabled={!isDayEditable} onChange={e => updateDraft(row.user_id, 'overtime_hours', e.target.value)} inputMode="decimal" placeholder="0" className="mt-1 h-12 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500" />
