@@ -338,7 +338,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
   // super_admin/admin/crm_admin/ceo: default analytics; crm: input only
   const [tab, setTab] = useState<Tab>(isCrm ? 'input' : 'analytics')
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('30d')
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1d')
 
   const [crmWorkers, setCrmWorkers] = useState<CrmWorker[]>([])
   const [selectedCrmUserId, setSelectedCrmUserId] = useState('')
