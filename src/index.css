@@ -215,6 +215,10 @@
     background: rgba(248, 250, 252, 0.72);
   }
 
+  .crm-modern-theme .crm-hours-month-section--empty-results {
+    display: none;
+  }
+
   .crm-modern-theme .crm-hours-month-section-title {
     margin-bottom: 0.6rem;
     color: #475569;
@@ -378,6 +382,10 @@
 
     .crm-modern-theme .crm-hours-month-section-metrics {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .crm-modern-theme .crm-hours-month-section--empty-results {
+      display: block;
     }
 
     .crm-modern-theme .crm-analytics-worker-list {

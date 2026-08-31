@@ -327,7 +327,10 @@ export function CrmWorkHours({
                     <div className="border-l-2 border-blue-300 pl-2"><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
                   </dl>
                 </section>
-                <section className="crm-hours-month-section crm-hours-month-section--results" aria-labelledby={`results-${row.user_id}`}>
+                <section
+                  className={`crm-hours-month-section crm-hours-month-section--results ${Number(row.total_units) === 0 && Number(row.total_orders) === 0 && Number(row.total_bonus) === 0 ? 'crm-hours-month-section--empty-results' : ''}`}
+                  aria-labelledby={`results-${row.user_id}`}
+                >
                   <h3 id={`results-${row.user_id}`} className="crm-hours-month-section-title">Результат і бонус</h3>
                   <dl className="crm-hours-month-section-metrics">
                     <div className="border-l-2 border-cyan-300 pl-2"><dt className="text-gray-400">Одиниць товару</dt><dd className="mt-0.5 font-bold text-cyan-700">{row.total_units}</dd></div>
