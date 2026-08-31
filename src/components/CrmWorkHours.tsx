@@ -300,7 +300,7 @@ export function CrmWorkHours({
       ) : readOnly ? (
         <div className="crm-hours-month-list space-y-3 lg:space-y-0">
           {monthRows.map(row => (
-            <article key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-4 shadow-md">
+            <article key={row.user_id} className="crm-hours-month-card rounded-3xl border border-white/80 bg-white/80 p-2.5 shadow-md">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-gray-800">{row.user_name}</p>
@@ -314,8 +314,8 @@ export function CrmWorkHours({
                 <section className="crm-hours-month-section crm-hours-month-section--days" aria-labelledby={`days-${row.user_id}`}>
                   <h3 id={`days-${row.user_id}`} className="crm-hours-month-section-title">Дні</h3>
                   <dl className="crm-hours-month-section-metrics">
-                    <div className="border-l-2 border-indigo-300 pl-2"><dt className="text-gray-400">Будні: відпрацьовано / у місяці</dt><dd className="mt-0.5 font-bold text-indigo-700">{formatDays(Math.max(0, row.days_active - row.saturdays_worked))} / {formatDays(monthWeekdays)}</dd></div>
-                    <div className="border-l-2 border-slate-300 pl-2"><dt className="text-gray-400">Відпрацьовано всього</dt><dd className="mt-0.5 font-bold text-gray-800">{formatDays(row.days_active)}</dd></div>
+                    <div className="border-l-2 border-indigo-300 pl-2"><dt className="text-gray-400">Будні: факт / план</dt><dd className="mt-0.5 font-bold text-indigo-700">{Math.max(0, row.days_active - row.saturdays_worked)} / {monthWeekdays} дн.</dd></div>
+                    <div className="border-l-2 border-slate-300 pl-2"><dt className="text-gray-400">Всього днів</dt><dd className="mt-0.5 font-bold text-gray-800">{formatDays(row.days_active)}</dd></div>
                     <div className="border-l-2 border-amber-300 pl-2"><dt className="text-gray-400">Робочі суботи</dt><dd className="mt-0.5 font-bold text-amber-700">{formatDays(row.saturdays_worked)}</dd></div>
                   </dl>
                   <div className="crm-hours-month-scale-mobile">{renderMonthScale(row)}</div>
@@ -323,8 +323,8 @@ export function CrmWorkHours({
                 <section className="crm-hours-month-section crm-hours-month-section--hours" aria-labelledby={`hours-${row.user_id}`}>
                   <h3 id={`hours-${row.user_id}`} className="crm-hours-month-section-title">Години</h3>
                   <dl className="crm-hours-month-section-metrics">
-                    <div className="border-l-2 border-emerald-300 pl-2"><dt className="text-gray-400">Звичайні години</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
-                    <div className="border-l-2 border-blue-300 pl-2"><dt className="text-gray-400">Години з переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
+                    <div className="border-l-2 border-emerald-300 pl-2"><dt className="text-gray-400">Звичайні</dt><dd className="mt-0.5 font-bold text-emerald-700">{formatHours(row.regular_hours)} год</dd></div>
+                    <div className="border-l-2 border-blue-300 pl-2"><dt className="text-gray-400">З переробками</dt><dd className="mt-0.5 font-bold text-blue-700">{formatHours(row.weighted_hours)} год</dd></div>
                   </dl>
                 </section>
                 <section
@@ -333,8 +333,8 @@ export function CrmWorkHours({
                 >
                   <h3 id={`results-${row.user_id}`} className="crm-hours-month-section-title">Результат і бонус</h3>
                   <dl className="crm-hours-month-section-metrics">
-                    <div className="border-l-2 border-cyan-300 pl-2"><dt className="text-gray-400">Одиниць товару</dt><dd className="mt-0.5 font-bold text-cyan-700">{row.total_units}</dd></div>
-                    <div className="border-l-2 border-violet-300 pl-2"><dt className="text-gray-400">Кількість замовлень</dt><dd className="mt-0.5 font-bold text-violet-700">{row.total_orders}</dd></div>
+                    <div className="border-l-2 border-cyan-300 pl-2"><dt className="text-gray-400">Одиниці</dt><dd className="mt-0.5 font-bold text-cyan-700">{row.total_units}</dd></div>
+                    <div className="border-l-2 border-violet-300 pl-2"><dt className="text-gray-400">Замовлення</dt><dd className="mt-0.5 font-bold text-violet-700">{row.total_orders}</dd></div>
                     <div className="border-l-2 border-amber-400 pl-2"><dt className="text-gray-400">Бонус</dt><dd className="mt-0.5 font-bold text-amber-700">{row.total_bonus} грн</dd></div>
                   </dl>
                 </section>
