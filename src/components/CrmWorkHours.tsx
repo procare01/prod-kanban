@@ -238,7 +238,7 @@ export function CrmWorkHours({
           {monthDates.map(date => {
             const worked = recentWorkDays.has(date)
             const weekend = isWeekendDate(date)
-            const state = worked ? (weekend ? 'weekend' : 'weekday') : 'empty'
+            const state = worked ? (weekend ? 'weekend' : 'weekday') : (weekend ? 'empty-weekend' : 'empty')
             const day = Number(date.slice(-2))
             const title = worked
               ? `${day} — ${weekend ? 'відпрацьований вихідний' : 'відпрацьований будень'}`

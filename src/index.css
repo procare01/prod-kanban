@@ -332,6 +332,11 @@
     background: #000;
   }
 
+  .crm-modern-theme .crm-hours-month-scale-day--empty-weekend {
+    border-color: #64748b;
+    background: #64748b;
+  }
+
   .crm-modern-theme .crm-hours-month-scale-key--weekday,
   .crm-modern-theme .crm-hours-month-scale-day--weekday {
     border-color: #7796ff;
