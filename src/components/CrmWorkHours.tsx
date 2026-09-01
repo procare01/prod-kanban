@@ -27,6 +27,8 @@ type HourDraft = {
 }
 
 const CRM_WORKER_SURNAME_ORDER = ['яблонський', 'кулик', 'самардак', 'поліщук', 'сіренко', 'машталер']
+const CRM_HIDDEN_WORKERS_FROM_SEPTEMBER = ['шепет']
+const CRM_HIDDEN_WORKERS_START_DATE = '2026-09-01'
 
 function sortCrmWorkerRows<T extends { user_name: string }>(rows: T[]) {
   const position = (name: string) => {
@@ -38,6 +40,15 @@ function sortCrmWorkerRows<T extends { user_name: string }>(rows: T[]) {
   return [...rows].sort((a, b) => {
     const difference = position(a.user_name) - position(b.user_name)
     return difference || a.user_name.localeCompare(b.user_name, 'uk-UA')
+  })
+}
+
+function visibleCrmWorkerRows<T extends { user_name: string }>(rows: T[], date: string) {
+  if (date < CRM_HIDDEN_WORKERS_START_DATE) return rows
+
+  return rows.filter(row => {
+    const normalizedName = row.user_name.toLocaleLowerCase('uk-UA')
+    return !CRM_HIDDEN_WORKERS_FROM_SEPTEMBER.some(surname => normalizedName.includes(surname))
   })
 }
 
@@ -151,8 +162,8 @@ export function CrmWorkHours({
           ])
       if (monthResult.error) throw monthResult.error
       if (dayResult.error) throw dayResult.error
-      const nextMonthRows = (monthResult.data ?? []) as CrmMonthDashboardRow[]
-      const nextDayRows = (dayResult.data ?? []) as CrmDailyWorkHoursRow[]
+      const nextMonthRows = visibleCrmWorkerRows((monthResult.data ?? []) as CrmMonthDashboardRow[], selectedDate)
+      const nextDayRows = visibleCrmWorkerRows((dayResult.data ?? []) as CrmDailyWorkHoursRow[], selectedDate)
       setMonthRows(sortCrmWorkerRows(nextMonthRows))
       setDayRows(sortCrmWorkerRows(nextDayRows))
       const isWeekend = [0, 6].includes(new Date(`${selectedDate}T12:00:00`).getDay())
