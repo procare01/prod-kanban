@@ -327,14 +327,14 @@
 
   .crm-modern-theme .crm-hours-month-scale-day {
     height: 0.6rem;
-    border: 1px solid #000;
+    border: 1px solid #64748b;
     border-radius: 0.16rem;
-    background: #000;
+    background: #64748b;
   }
 
   .crm-modern-theme .crm-hours-month-scale-day--empty-weekend {
-    border-color: #64748b;
-    background: #64748b;
+    border-color: #000;
+    background: #000;
   }
 
   .crm-modern-theme .crm-hours-month-scale-key--weekday,
