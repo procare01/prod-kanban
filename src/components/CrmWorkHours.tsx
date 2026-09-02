@@ -325,7 +325,7 @@ export function CrmWorkHours({
                 </div>
               </div>
               <div className="crm-hours-month-scale-desktop">{renderMonthScale(row)}</div>
-              <div className="crm-hours-month-summary mt-4 border-t border-slate-100 pt-3 text-xs">
+              <div className="crm-hours-month-summary mt-0 border-t border-slate-100 pt-3 text-xs">
                 <section className="crm-hours-month-section crm-hours-month-section--days" aria-labelledby={`days-${row.user_id}`}>
                   <h3 id={`days-${row.user_id}`} className="crm-hours-month-section-title">Дні</h3>
                   <dl className="crm-hours-month-section-metrics">
