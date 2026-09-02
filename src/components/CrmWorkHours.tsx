@@ -420,7 +420,7 @@ export function CrmWorkHours({
                 </div>
 
                 {isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${savedUserId === row.user_id ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                  {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено' : onSaveOrder ? 'Зберегти дані за день' : 'Зберегти години за день'}
+                  {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено' : onSaveOrder ? 'Зберегти' : 'Зберегти години за день'}
                 </button>}
               </div>
             )
