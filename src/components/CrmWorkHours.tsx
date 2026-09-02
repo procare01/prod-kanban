@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import type { CrmDailyWorkHoursRow, CrmEntry, CrmMonthDashboardRow } from '../types'
 
@@ -18,6 +18,8 @@ interface Props {
   collapseOvertimeControls?: boolean
   recentEntries?: CrmEntry[]
   hasPendingOrderChanges?: boolean
+  footer?: ReactNode
+  embedded?: boolean
 }
 
 type HourDraft = {
@@ -130,7 +132,7 @@ function formatDays(value: number) {
 export function CrmWorkHours({
   userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder, canEditSelectedDate = true,
-  collapseOvertimeControls = false, recentEntries = [], hasPendingOrderChanges = false,
+  collapseOvertimeControls = false, recentEntries = [], hasPendingOrderChanges = false, footer, embedded = false,
 }: Props) {
   const today = toDateValue(new Date())
   const [internalDate] = useState(today)
@@ -369,7 +371,7 @@ export function CrmWorkHours({
             const monthRow = monthRows.find(monthItem => monthItem.user_id === row.user_id)
 
             return (
-              <div key={row.user_id} className="rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/80">
+              <div key={row.user_id} className={`${embedded ? 'crm-hours-entry-card' : 'rounded-3xl'} p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/80`}>
                 {!compact && <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="font-bold text-gray-800">{row.user_name}</p>
@@ -414,14 +416,18 @@ export function CrmWorkHours({
                   </label>}
                 </div>
 
-                <div className={`mt-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-center ${compact ? 'justify-start' : 'justify-between'}`}>
+                <div className={`mt-3 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5 flex items-center ${compact ? 'justify-between gap-3' : 'justify-between'}`}>
                   <div><p className="text-xs text-gray-400">До оплати за день</p><p className="text-xl font-extrabold text-blue-700">{formatHours(calculatedHours)} год</p></div>
+                  {compact && isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className={`min-w-32 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${savedUserId === row.user_id ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                    {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено' : 'Зберегти'}
+                  </button>}
                   {!compact && <div className="text-right"><p className="text-xs text-gray-400">Бонус за місяць</p><p className="text-sm font-bold text-amber-600">{monthRow?.total_bonus ?? 0} грн</p></div>}
                 </div>
 
-                {isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${savedUserId === row.user_id ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                {!compact && isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${savedUserId === row.user_id ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
                   {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено' : onSaveOrder ? 'Зберегти' : 'Зберегти години за день'}
                 </button>}
+                {footer}
               </div>
             )
           })}

@@ -156,7 +156,17 @@ function getTabLabel(tab: Tab) {
   if (tab === 'work-hours') return 'Звіт'
   if (tab === 'records') return 'Перегляд'
   if (tab === 'screenshot') return 'Скрін'
-  return 'Введення даних'
+  return 'Введення'
+}
+
+function formatNameInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => `${part.charAt(0).toLocaleUpperCase('uk-UA')}.`)
+    .join(' ')
 }
 
 // ─── Bonus calculation ────────────────────────────────────────────────────────
@@ -1003,11 +1013,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   return (
     <>
-    <div className={`min-h-screen pb-8 ${isModernTheme ? 'crm-modern-theme' : ''}`} style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
-      <div className="max-w-screen-sm lg:max-w-[1180px] crm-content mx-auto px-3 pt-3 space-y-3">
+    <div className={`min-h-screen pb-8 ${isModernTheme ? 'crm-modern-theme' : ''} ${isCrm ? 'crm-worker-view' : ''}`} style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
+      <div className={`${isCrm ? 'max-w-[1180px]' : 'max-w-screen-sm lg:max-w-[1180px]'} crm-content mx-auto px-3 pt-3 ${isCrm ? 'space-y-2' : 'space-y-3'}`}>
 
-        {/* Header */}
-        <div className="crm-header rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
+        {/* CRM employee uses one compact control panel instead of separate header, tabs and date cards. */}
+        <section className={isCrm ? 'crm-worker-panel' : 'crm-header rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75'}>
+          <div className={`${isCrm ? 'crm-worker-header' : ''} px-4 py-3 flex items-center justify-between`}>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 mr-1">
@@ -1016,44 +1027,82 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                 </svg>
               </button>
             )}
-            <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center">
+            <div className="crm-user-initials w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center text-xs font-extrabold text-emerald-700" aria-label={isCrm ? user.name : undefined} title={isCrm ? user.name : undefined}>
+              {isCrm ? formatNameInitials(user.name) : (
               <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
+              )}
             </div>
-            <div>
+            {!isCrm && <div>
               <p className="text-sm font-bold text-gray-800">Склад CRM</p>
               <p className="text-xs text-gray-400">{user.name}</p>
-            </div>
+            </div>}
           </div>
-          <button
+          {!isCrm && <button
             onClick={onLogout}
-            className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="crm-logout-button inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-500 shadow-sm transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-700"
+            aria-label="Вийти"
+            title="Вийти"
           >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3H9m9.75 0l-3-3m3 3l-3 3" />
+            </svg>
             Вийти
-          </button>
+          </button>}
         </div>
 
         {/* CRM працівник бачить введення своїх даних і власні робочі години. */}
-        {
-          <div className={`crm-navigation crm-navigation--${navigationTabs.length} grid gap-2 ${navigationTabs.length > 5 ? 'grid-cols-2 sm:grid-cols-6' : navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
-            {navigationTabs.map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-[0.98]
-                  backdrop-blur-md shadow-sm
-                  ${tab === t
-                    ? 'bg-gradient-to-br from-blue-50 to-white border-2 border-blue-400 text-blue-700 shadow-md'
-                    : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
-                  }`}
-              >
-                {getTabLabel(t)}
-              </button>
-            ))}
+        <div className={`crm-navigation crm-navigation--${navigationTabs.length} grid gap-2 ${navigationTabs.length > 5 ? 'grid-cols-2 sm:grid-cols-6' : navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
+            {navigationTabs.map(t => {
+              const button = (
+                <button
+                  onClick={() => setTab(t)}
+                  aria-label={getTabLabel(t)}
+                  title={getTabLabel(t)}
+                  className={`flex-1 py-3.5 rounded-2xl text-sm font-bold transition-all duration-200 active:scale-[0.98]
+                    backdrop-blur-md shadow-sm
+                    ${tab === t
+                      ? 'bg-gradient-to-br from-blue-50 to-white border-2 border-blue-400 text-blue-700 shadow-md'
+                      : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
+                    }`}
+                >
+                  {isCrm && (t === 'input' ? (
+                    <svg className="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 2.651 2.651M4.5 19.5l4.131-.826L19.5 7.805l-2.651-2.651L5.98 16.023 4.5 19.5Z" />
+                    </svg>
+                  ) : (
+                    <svg className="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 16v-5m5 5V8m5 8v-3" />
+                    </svg>
+                  ))}
+                  {!isCrm && getTabLabel(t)}
+                  {isCrm && <span className="crm-navigation-label">{getTabLabel(t)}</span>}
+                </button>
+              )
+
+              return isCrm ? (
+                <div key={t} className="crm-navigation-action">
+                  {button}
+                </div>
+              ) : <span key={t}>{button}</span>
+            })}
           </div>
-        }
+        {isCrm && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="crm-logout-button crm-worker-logout inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-500 shadow-sm transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-700"
+            aria-label="Вийти"
+            title="Вийти"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3H9m9.75 0l-3-3m3 3l-3 3" />
+            </svg>
+          </button>
+        )}
+        </section>
 
         {/* ── INPUT TAB ──────────────────────────────────────────────────────── */}
         {tab === 'input' && (
@@ -1081,7 +1130,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             )}
 
             {/* Date picker */}
-            <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
+            {!isCrm && <div className="rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -1129,9 +1178,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   </svg>
                 </button>
               </div>
-            </div>
+            </div>}
 
             {/* Input form */}
+            <div className={isCrm ? 'crm-entry-workspace rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75' : 'space-y-3'}>
             {!isDimaKulyk && (
               <div className="crm-input-form rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -1181,7 +1231,24 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               compact
               onSaveOrder={handleSubmit}
               hasPendingOrderChanges={orderFieldsDirty}
+              footer={isCrm ? (
+                <div className="crm-worker-date crm-worker-date--footer mt-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <button type="button" onClick={() => setSelectedDate(toDateInputValue(addDays(parseDateInputValue(selectedDate), -1)))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700" aria-label="Попередній день" title="Попередній день">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m15 18-6-6 6-6" /></svg>
+                    </button>
+                    <span className="crm-worker-date-value text-sm font-semibold text-gray-500" aria-label={`Обрана дата: ${formatDisplayDate(selectedDate)}`}>
+                      {formatDisplayDate(selectedDate).slice(0, 5)}
+                    </span>
+                    <button type="button" disabled={isToday} onClick={() => setSelectedDate(toDateInputValue(addDays(parseDateInputValue(selectedDate), 1)))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-400 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-35" aria-label="Наступний день" title="Наступний день">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" /></svg>
+                    </button>
+                  </div>
+                </div>
+              ) : undefined}
+              embedded={isCrm}
             />
+            </div>
 
           </>
         )}
