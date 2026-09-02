@@ -413,7 +413,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [editRateHigh, setEditRateHigh] = useState('')
   const [savingRates, setSavingRates] = useState(false)
   const [showBonusSettings, setShowBonusSettings] = useState(false)
-  const [isModernTheme, setIsModernTheme] = useState(false)
+  const [isModernTheme, setIsModernTheme] = useState(true)
   const [savingTheme, setSavingTheme] = useState(false)
   const [showEmployeeBonuses, setShowEmployeeBonuses] = useState(false)
   const [showMonthlyBonus, setShowMonthlyBonus] = useState(false)
