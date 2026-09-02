@@ -890,6 +890,11 @@
     box-shadow: none;
   }
 
+  /* One consistent directional shadow across every CRM action control. */
+  .crm-modern-theme button {
+    box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.26) !important;
+  }
+
   @media (max-width: 560px) {
     .crm-worker-view .crm-worker-panel {
       column-gap: 0.5rem;
