@@ -1138,6 +1138,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               targetUserId={canManageCrm ? selectedCrmUserId : user.id}
               compact
               onSaveOrder={handleSubmit}
+              hasPendingOrderChanges={orderFieldsDirty}
             />
 
           </>

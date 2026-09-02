@@ -17,6 +17,7 @@ interface Props {
   canEditSelectedDate?: boolean
   collapseOvertimeControls?: boolean
   recentEntries?: CrmEntry[]
+  hasPendingOrderChanges?: boolean
 }
 
 type HourDraft = {
@@ -129,7 +130,7 @@ function formatDays(value: number) {
 export function CrmWorkHours({
   userId, userPin, canManage, canViewAll = canManage, readOnly = false, showDashboard = true,
   selectedDate: controlledDate, onSelectedDateChange, targetUserId, compact = false, onSaveOrder, canEditSelectedDate = true,
-  collapseOvertimeControls = false, recentEntries = [],
+  collapseOvertimeControls = false, recentEntries = [], hasPendingOrderChanges = false,
 }: Props) {
   const today = toDateValue(new Date())
   const [internalDate] = useState(today)
@@ -185,6 +186,7 @@ export function CrmWorkHours({
   }, [userId, userPin, canViewAll, selectedDate])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { setSavedUserId(null) }, [selectedDate, hasPendingOrderChanges])
 
   const totals = useMemo(() => monthRows.reduce((acc, row) => ({
     orders: acc.orders + Number(row.total_orders || 0),
@@ -197,6 +199,7 @@ export function CrmWorkHours({
   const updateDraft = (userId: string, field: keyof HourDraft, value: string) => {
     if (!isDayEditable) return
     const sanitized = field === 'overtime_coefficient' ? value : value.replace(/[^\d.,]/g, '')
+    setSavedUserId(current => current === userId ? null : current)
     setDrafts(current => ({ ...current, [userId]: { ...current[userId], [field]: sanitized } }))
   }
 
@@ -224,7 +227,6 @@ export function CrmWorkHours({
       if (rpcError) throw rpcError
       setSavedUserId(targetUserId)
       await load()
-      window.setTimeout(() => setSavedUserId(null), 2000)
     } catch {
       setError('Не вдалося зберегти години. Перевірте дані та повторіть спробу.')
     } finally {
@@ -417,8 +419,8 @@ export function CrmWorkHours({
                   {!compact && <div className="text-right"><p className="text-xs text-gray-400">Бонус за місяць</p><p className="text-sm font-bold text-amber-600">{monthRow?.total_bonus ?? 0} грн</p></div>}
                 </div>
 
-                {isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className="mt-3 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
-                  {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено ✓' : onSaveOrder ? 'Зберегти дані за день' : 'Зберегти години за день'}
+                {isDayEditable && <button onClick={() => saveHours(row.user_id)} disabled={savingUserId === row.user_id} className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${savedUserId === row.user_id ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                  {savingUserId === row.user_id ? 'Збереження…' : savedUserId === row.user_id ? 'Збережено' : onSaveOrder ? 'Зберегти дані за день' : 'Зберегти години за день'}
                 </button>}
               </div>
             )
