@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { CrmWorkHours } from '../components/CrmWorkHours'
+import { CrmReportScreenshot } from '../components/CrmReportScreenshot'
 import type { User, CrmTodayData, CrmAnalytics, CrmDailyPoint, CrmMonthlyUserBonus, CrmEntry, CrmWorker } from '../types'
 
 interface Props {
@@ -9,7 +10,7 @@ interface Props {
   onLogout: () => void
 }
 
-type Tab = 'input' | 'analytics' | 'chart' | 'work-hours' | 'records'
+type Tab = 'input' | 'analytics' | 'chart' | 'work-hours' | 'records' | 'screenshot'
 type ChartPeriod = '1d' | '7d' | '30d'
 type CrmBonusRow = { user_id: string; user_name: string; orders: number; bonus: number; days_active: number }
 
@@ -145,6 +146,7 @@ function getTabLabel(tab: Tab) {
   if (tab === 'chart') return 'Графік'
   if (tab === 'work-hours') return 'Звіт'
   if (tab === 'records') return 'Перегляд'
+  if (tab === 'screenshot') return 'Скрін'
   return 'Введення даних'
 }
 
@@ -350,6 +352,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   const [units, setUnits] = useState('')
   const [orderFieldsDirty, setOrderFieldsDirty] = useState(false)
   const [selectedDate, setSelectedDate] = useState(toDateInputValue(new Date()))
+  const [screenshotDate, setScreenshotDate] = useState(toDateInputValue(new Date()))
   const [submitting, setSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -379,6 +382,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
   // Data
   const [dayData, setDayData] = useState<CrmTodayData | null>(null)
+  const [screenshotData, setScreenshotData] = useState<CrmTodayData | null>(null)
+  const [loadingScreenshot, setLoadingScreenshot] = useState(false)
   const [analyticsDayData, setAnalyticsDayData] = useState<CrmTodayData | null>(null)
   const [analytics, setAnalytics] = useState<CrmAnalytics | null>(null)
   const [recentEntries, setRecentEntries] = useState<CrmEntry[]>([])
@@ -432,6 +437,23 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       setAnalyticsDayData(null)
     }
   }, [user.id, isAdmin])
+
+  const fetchScreenshotData = useCallback(async (date: string) => {
+    setLoadingScreenshot(true)
+    try {
+      const { data, error } = await supabase.rpc('get_crm_today', {
+        p_user_id: user.id,
+        p_is_admin: true,
+        p_date: date,
+      })
+      if (error) throw error
+      setScreenshotData((data ?? { total_orders: 0, total_units: 0, entries: [] }) as CrmTodayData)
+    } catch {
+      setScreenshotData(null)
+    } finally {
+      setLoadingScreenshot(false)
+    }
+  }, [user.id])
 
   // ── Fetch analytics ─────────────────────────────────────────────────────────
   const fetchAnalytics = useCallback(async (days: number, date: string) => {
@@ -658,6 +680,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
       fetchGraphData(graphStartDate, graphEndDate)
     }
   }, [tab, graphStartDate, graphEndDate, fetchGraphData])
+
+  useEffect(() => {
+    if (tab === 'screenshot' && isSuperAdmin) fetchScreenshotData(screenshotDate)
+  }, [tab, isSuperAdmin, screenshotDate, fetchScreenshotData])
 
   // ── Submit entry ────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -953,7 +979,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     ? ['input', 'work-hours']
     : canManageCrm
       ? isSuperAdmin
-        ? ['analytics', 'chart', 'input', 'records', 'work-hours']
+        ? ['analytics', 'chart', 'input', 'records', 'work-hours', 'screenshot']
         : ['analytics', 'chart', 'input', 'work-hours']
       : user.role === 'crm_admin'
         ? ['analytics', 'chart', 'records', 'work-hours']
@@ -995,7 +1021,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
 
         {/* CRM працівник бачить введення своїх даних і власні робочі години. */}
         {
-          <div className={`crm-navigation crm-navigation--${navigationTabs.length} grid gap-2 ${navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
+          <div className={`crm-navigation crm-navigation--${navigationTabs.length} grid gap-2 ${navigationTabs.length > 5 ? 'grid-cols-2 sm:grid-cols-6' : navigationTabs.length > 4 ? 'grid-cols-2 sm:grid-cols-5' : navigationTabs.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
             {navigationTabs.map(t => (
               <button
                 key={t}
@@ -1206,6 +1232,16 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                   )}
                 </div>
               </div>
+        )}
+
+        {/* ── SCREENSHOT TAB — super admin only ─────────────────────────────── */}
+        {tab === 'screenshot' && isSuperAdmin && (
+          <CrmReportScreenshot
+            date={screenshotDate}
+            data={screenshotData}
+            loading={loadingScreenshot}
+            onDateChange={setScreenshotDate}
+          />
         )}
 
         {/* ── GRAPH TAB ──────────────────────────────────────────────────────── */}
