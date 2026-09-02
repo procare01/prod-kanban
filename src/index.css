@@ -735,6 +735,10 @@
     font-weight: 700;
   }
 
+  .crm-worker-view select {
+    font-size: 1.25rem;
+  }
+
   .crm-worker-view .crm-navigation-action {
     display: contents;
   }
