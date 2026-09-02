@@ -1058,6 +1058,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
             {navigationTabs.map(t => {
               const button = (
                 <button
+                  key={isCrm ? undefined : t}
                   onClick={() => setTab(t)}
                   aria-label={getTabLabel(t)}
                   title={getTabLabel(t)}
@@ -1085,8 +1086,8 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               return isCrm ? (
                 <div key={t} className="crm-navigation-action">
                   {button}
-                </div>
-              ) : <span key={t}>{button}</span>
+                  </div>
+              ) : button
             })}
           </div>
         {isCrm && (
