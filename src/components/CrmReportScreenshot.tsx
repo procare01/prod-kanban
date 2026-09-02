@@ -59,6 +59,7 @@ export function CrmReportScreenshot({ date, data, loading, onDateChange }: Props
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const imageScale = 0.65
     const W = 1440
     const H = 1130
     const left = 31
@@ -81,6 +82,7 @@ export function CrmReportScreenshot({ date, data, loading, onDateChange }: Props
     const ordersPerHour = hours ? Math.round(totalOrders / hours) : 0
     const unitsPerHour = hours ? Math.round(totalUnits / hours) : 0
 
+    ctx.setTransform(imageScale, 0, 0, imageScale, 0, 0)
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, W, H)
     ctx.strokeStyle = '#111111'
@@ -207,8 +209,8 @@ export function CrmReportScreenshot({ date, data, loading, onDateChange }: Props
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
-        <canvas ref={canvasRef} width={1440} height={1130} className="block h-auto w-full" aria-label="Зображення денного CRM-звіту" />
+      <div className="flex justify-center overflow-hidden rounded-xl border border-slate-300 bg-white">
+        <canvas ref={canvasRef} width={936} height={735} className="block h-auto w-full sm:w-[65%]" aria-label="Зображення денного CRM-звіту" />
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
