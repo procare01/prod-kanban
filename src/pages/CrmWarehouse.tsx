@@ -14,6 +14,15 @@ type Tab = 'input' | 'analytics' | 'chart' | 'work-hours' | 'records' | 'screens
 type ChartPeriod = '1d' | '7d' | '30d'
 type CrmBonusRow = { user_id: string; user_name: string; orders: number; bonus: number; days_active: number }
 
+function getSavedCrmTab(storageKey: string, tabs: Tab[], fallback: Tab): Tab {
+  try {
+    const savedTab = window.localStorage.getItem(storageKey)
+    return savedTab && tabs.includes(savedTab as Tab) ? savedTab as Tab : fallback
+  } catch {
+    return fallback
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toDateInputValue(d: Date) {
   const y = d.getFullYear()
@@ -338,8 +347,19 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     (user.role === 'admin' && (user.pin === '1505' || user.pin === '7985'))
   // ceo бачить аналітику але без бонусів і налаштувань
   const showBonusAsAdmin = user.role === 'crm_admin' || isAdminWithCrmAccess
+  const navigationTabs: Tab[] = isCrm
+    ? ['input', 'work-hours']
+    : canManageCrm
+      ? isSuperAdmin
+        ? ['analytics', 'chart', 'input', 'records', 'work-hours', 'screenshot']
+        : ['analytics', 'chart', 'input', 'work-hours']
+      : user.role === 'crm_admin'
+        ? ['analytics', 'chart', 'records', 'work-hours']
+        : ['analytics', 'chart']
+  const defaultTab: Tab = isCrm ? 'input' : 'analytics'
+  const tabStorageKey = `crm-warehouse-active-tab:${user.id}`
   // super_admin/admin/crm_admin/ceo: default analytics; crm: input only
-  const [tab, setTab] = useState<Tab>(isCrm ? 'input' : 'analytics')
+  const [tab, setTab] = useState<Tab>(() => getSavedCrmTab(tabStorageKey, navigationTabs, defaultTab))
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('1d')
 
   const [crmWorkers, setCrmWorkers] = useState<CrmWorker[]>([])
@@ -646,6 +666,12 @@ export function CrmWarehouse({ user, onLogout }: Props) {
   }, [user.id, user.pin])
 
   useEffect(() => { fetchDay(selectedDate) }, [fetchDay, selectedDate])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(tabStorageKey, tab)
+    } catch {/* local storage may be unavailable */}
+  }, [tab, tabStorageKey])
 
   useEffect(() => { fetchRecent() }, [fetchRecent])
   useEffect(() => {
@@ -975,20 +1001,10 @@ export function CrmWarehouse({ user, onLogout }: Props) {
     </section>
   ))
 
-  const navigationTabs: Tab[] = isCrm
-    ? ['input', 'work-hours']
-    : canManageCrm
-      ? isSuperAdmin
-        ? ['analytics', 'chart', 'input', 'records', 'work-hours', 'screenshot']
-        : ['analytics', 'chart', 'input', 'work-hours']
-      : user.role === 'crm_admin'
-        ? ['analytics', 'chart', 'records', 'work-hours']
-        : ['analytics', 'chart']
-
   return (
     <>
     <div className={`min-h-screen pb-8 ${isModernTheme ? 'crm-modern-theme' : ''}`} style={{background:'linear-gradient(135deg,#e8f4f8 0%,#f0f9ff 40%,#e8f0fe 100%)'}}>
-      <div className={`${isModernTheme ? 'max-w-[1180px]' : 'max-w-screen-sm'} crm-content mx-auto px-3 pt-3 space-y-3`}>
+      <div className="max-w-screen-sm lg:max-w-[1180px] crm-content mx-auto px-3 pt-3 space-y-3">
 
         {/* Header */}
         <div className="crm-header rounded-3xl px-4 py-3 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 flex items-center justify-between">
