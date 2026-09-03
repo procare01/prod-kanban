@@ -536,21 +536,14 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         return
       }
 
-      const results = await Promise.all(days.map(async date => {
-        const { data, error } = await supabase.rpc('get_crm_today', {
-          p_user_id: user.id,
-          p_is_admin: isAdmin,
-          p_date: date,
-        })
-        if (error) throw error
-        const row = (data ?? { total_orders: 0, total_units: 0 }) as CrmTodayData
-        return {
-          date,
-          orders: row.total_orders ?? 0,
-          units: row.total_units ?? 0,
-        } as CrmDailyPoint
-      }))
-      setGraphData(results)
+      const { data, error } = await supabase.rpc('get_crm_daily_range', {
+        p_user_id: user.id,
+        p_is_admin: isAdmin,
+        p_start_date: start,
+        p_end_date: end,
+      })
+      if (error) throw error
+      setGraphData((data ?? []) as CrmDailyPoint[])
     } catch {
       setGraphData([])
       setGraphError('Не вдалося завантажити графік за вибраний період')
