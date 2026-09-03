@@ -965,6 +965,9 @@ export function CrmWarehouse({ user, onLogout }: Props) {
         {sortCrmRowsByWorker(group.entries).map(entry => {
           const bonus = calcBonus(entry.orders_count, bonusSettings)
           const hasMoreThanEightHours = Number(entry.weighted_hours ?? 0) > 8
+          const hideZeroMetrics = isSuperAdmin && ['кулик', 'яблонськ'].some(surname =>
+            entry.user_name.toLocaleLowerCase('uk-UA').includes(surname)
+          )
           const entryDate = getCrmEntryWorkDate(entry)
           const date = (entry.work_date || hideRecordTime)
             ? entryDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Kyiv' })
@@ -974,21 +977,27 @@ export function CrmWarehouse({ user, onLogout }: Props) {
           return (
             <div
               key={entry.id}
-              className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${hasMoreThanEightHours ? 'border-pink-200 bg-pink-50/80' : group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
+              className={`crm-record-row flex items-center gap-2 rounded-2xl border px-3 py-2.5 ${isSuperAdmin ? 'crm-record-row--super-admin' : ''} ${hasMoreThanEightHours ? 'border-pink-200 bg-pink-50/80' : group.isWeekend ? 'border-amber-100 bg-amber-50/70' : 'border-white bg-white/60'}`}
             >
-              <div className="flex-1 min-w-0">
+              <div className="crm-record-person flex-1 min-w-0">
                 {canViewCrmHours && <p className="truncate text-xs font-semibold text-emerald-700">{entry.user_name}</p>}
                 <p className="text-xs text-gray-400">{date}</p>
               </div>
-              {bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
-              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></div>
-              <div className="text-right"><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></div>
-              <div className="text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
+              {isSuperAdmin ? (
+                <div className="crm-record-bonus text-right">{bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}</div>
+              ) : bonus > 0 && <span className="text-sm font-bold text-amber-500">{bonus} грн</span>}
+              <div className="crm-record-metric crm-record-metric--orders text-right">
+                {(!hideZeroMetrics || entry.orders_count !== 0) && <><span className="text-sm font-bold text-gray-800">{entry.orders_count}</span><span className="ml-1 text-xs text-gray-400">зам.</span></>}
+              </div>
+              <div className="crm-record-metric crm-record-metric--units text-right">
+                {(!hideZeroMetrics || entry.units_count !== 0) && <><span className="text-sm font-bold text-gray-800">{entry.units_count}</span><span className="ml-1 text-xs text-gray-400">од.</span></>}
+              </div>
+              <div className="crm-record-metric crm-record-metric--hours text-right whitespace-nowrap"><span className="text-sm font-bold text-blue-700">{Number(entry.weighted_hours ?? 0).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}</span><span className="ml-1 text-xs text-gray-400">год</span></div>
               {canEditRecentRecords && (
                 <button
                   type="button"
                   onClick={() => beginEditRecentRecord(entry)}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  className="crm-record-edit flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
                   aria-label={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
                   title={entry.record_type === 'hours' ? 'Редагувати години' : 'Редагувати запис'}
                 >

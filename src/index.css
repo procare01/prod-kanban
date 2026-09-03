@@ -833,6 +833,24 @@
     box-shadow: none;
   }
 
+  @media (min-width: 1024px) {
+    .crm-record-row--super-admin {
+      display: grid;
+      grid-template-columns: minmax(12rem, 1fr) 5.5rem 5rem 5rem 5rem 1.75rem;
+      column-gap: 0.75rem;
+    }
+
+    .crm-record-row--super-admin .crm-record-person,
+    .crm-record-row--super-admin .crm-record-bonus,
+    .crm-record-row--super-admin .crm-record-metric {
+      min-width: 0;
+    }
+
+    .crm-record-row--super-admin .crm-record-edit {
+      justify-self: end;
+    }
+  }
+
   /* One consistent directional shadow across every CRM action control. */
   .crm-modern-theme button {
     box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.26) !important;
