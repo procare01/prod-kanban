@@ -862,16 +862,8 @@
   }
 
   .crm-worker-view .crm-navigation-label {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     font-size: 0.9rem;
     font-weight: 800;
-  }
-
-  .crm-worker-view .crm-worker-panel .crm-navigation button svg {
-    position: absolute;
-    left: 0.9rem;
   }
 
   .crm-worker-view .crm-entry-workspace .crm-input-form {

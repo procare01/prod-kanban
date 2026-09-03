@@ -1069,15 +1069,6 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                       : 'bg-gradient-to-br from-gray-50/80 to-white/60 border border-gray-200/80 text-gray-400 hover:border-blue-200 hover:text-gray-600'
                     }`}
                 >
-                  {isCrm && (t === 'input' ? (
-                    <svg className="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 2.651 2.651M4.5 19.5l4.131-.826L19.5 7.805l-2.651-2.651L5.98 16.023 4.5 19.5Z" />
-                    </svg>
-                  ) : (
-                    <svg className="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 16v-5m5 5V8m5 8v-3" />
-                    </svg>
-                  ))}
                   {!isCrm && getTabLabel(t)}
                   {isCrm && <span className="crm-navigation-label">{getTabLabel(t)}</span>}
                 </button>
@@ -1187,7 +1178,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
               <div className="crm-input-form rounded-3xl p-4 shadow-md backdrop-blur-sm border border-white/80 bg-white/75 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 font-medium block mb-1">Кількість замовлень</label>
+                    <label className="text-xs text-gray-500 font-medium mb-1 min-h-8 flex items-end">Кількість замовлень</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" value={orders}
                       disabled={isCrmPastDayReadOnly}
@@ -1198,7 +1189,7 @@ export function CrmWarehouse({ user, onLogout }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 font-medium block mb-1">Кількість одиниць товару</label>
+                    <label className="text-xs text-gray-500 font-medium mb-1 min-h-8 flex items-end">Кількість одиниць товару</label>
                     <input
                       type="text" inputMode="numeric" pattern="[0-9]*" value={units}
                       disabled={isCrmPastDayReadOnly}
